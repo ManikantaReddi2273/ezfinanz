@@ -11,8 +11,6 @@ import com.ezfinanz.selfie.repo.SelfieRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.Files;
-
 @Service
 public class ApplicationCascadeService {
 
@@ -85,7 +83,7 @@ public class ApplicationCascadeService {
             return;
         }
         try {
-            Files.deleteIfExists(fileStorage.resolve(row.getPhotoPath()));
+            fileStorage.delete(row.getPhotoPath());
         } catch (Exception ignored) {
             // Best-effort cleanup; missing files are handled on read.
         }

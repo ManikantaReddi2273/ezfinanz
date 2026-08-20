@@ -15,15 +15,12 @@ import com.ezfinanz.selfie.domain.SelfieReviewStatus;
 import com.ezfinanz.selfie.domain.SelfieSubmission;
 import com.ezfinanz.selfie.dto.SelfieResponse;
 import com.ezfinanz.selfie.repo.SelfieRepository;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 
 @Service
@@ -132,11 +129,10 @@ public class SelfieService {
     public Resource photo(Long userId) {
         SelfieSubmission row = selfieRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SELFIE_NOT_FOUND", "No selfie has been saved yet."));
-        Path path = fileStorage.resolve(row.getPhotoPath());
-        if (!Files.exists(path)) {
+        if (row.getPhotoPath() == null || !fileStorage.exists(row.getPhotoPath())) {
             throw new ApiException(HttpStatus.NOT_FOUND, "PHOTO_MISSING", "The selfie file is missing.");
         }
-        return new FileSystemResource(path);
+        return fileStorage.asResource(row.getPhotoPath(), row.getOriginalName());
     }
 
     private void requireReadyToSubmit(Long userId, User user) {

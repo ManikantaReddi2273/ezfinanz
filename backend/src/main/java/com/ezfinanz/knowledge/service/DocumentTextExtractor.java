@@ -9,19 +9,17 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Locale;
 
 @Component
 public class DocumentTextExtractor {
 
-    public String extract(Path path, String originalName) {
+    public String extract(byte[] bytes, String originalName) {
         String ext = extension(originalName);
         try {
             return switch (ext) {
-                case "txt", "md" -> Files.readString(path, StandardCharsets.UTF_8);
-                case "pdf" -> extractPdf(path);
+                case "txt", "md" -> new String(bytes, StandardCharsets.UTF_8);
+                case "pdf" -> extractPdf(bytes);
                 default -> throw new ApiException(
                         HttpStatus.BAD_REQUEST,
                         "FILE_TYPE_INVALID",
@@ -39,8 +37,8 @@ public class DocumentTextExtractor {
         }
     }
 
-    private static String extractPdf(Path path) throws IOException {
-        try (PDDocument document = Loader.loadPDF(path.toFile())) {
+    private static String extractPdf(byte[] bytes) throws IOException {
+        try (PDDocument document = Loader.loadPDF(bytes)) {
             PDFTextStripper stripper = new PDFTextStripper();
             String text = stripper.getText(document);
             return text == null ? "" : text;

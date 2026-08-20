@@ -11,15 +11,12 @@ import com.ezfinanz.kyc.domain.IdType;
 import com.ezfinanz.kyc.domain.KycProfile;
 import com.ezfinanz.kyc.dto.KycResponse;
 import com.ezfinanz.kyc.repo.KycRepository;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.Period;
 
@@ -116,11 +113,10 @@ public class KycService {
         if (profile.getIdDocumentPath() == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DOCUMENT_NOT_FOUND", "No ID document was uploaded.");
         }
-        Path path = fileStorage.resolve(profile.getIdDocumentPath());
-        if (!Files.exists(path)) {
+        if (!fileStorage.exists(profile.getIdDocumentPath())) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DOCUMENT_NOT_FOUND", "The ID document file is missing.");
         }
-        return new FileSystemResource(path);
+        return fileStorage.asResource(profile.getIdDocumentPath(), profile.getIdDocumentOriginalName());
     }
 
     private void validate(LocalDate dateOfBirth, String pincode, IdType idType, String idNumber) {

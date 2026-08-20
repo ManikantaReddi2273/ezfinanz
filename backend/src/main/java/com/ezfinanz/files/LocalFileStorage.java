@@ -2,24 +2,50 @@ package com.ezfinanz.files;
 
 import com.ezfinanz.common.ApiException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Stores application files in Supabase Storage (used for both local and production).
+ */
 @Service
 public class LocalFileStorage {
 
-    private final Path root;
+    private final RestClient restClient;
+    private final String bucket;
+    private final boolean configured;
 
-    public LocalFileStorage(@Value("${app.files.directory:uploads}") String directory) {
-        this.root = Path.of(directory).toAbsolutePath().normalize();
+    public LocalFileStorage(
+            @Value("${app.supabase.url:}") String supabaseUrl,
+            @Value("${app.supabase.key:}") String supabaseKey,
+            @Value("${app.supabase.bucket:ezfinanz-files}") String bucket
+    ) {
+        this.bucket = bucket == null || bucket.isBlank() ? "ezfinanz-files" : bucket.trim();
+        String base = supabaseUrl == null ? "" : supabaseUrl.trim().replaceAll("/+$", "");
+        String key = supabaseKey == null ? "" : supabaseKey.trim();
+        this.configured = !base.isBlank() && !key.isBlank();
+        if (configured) {
+            this.restClient = RestClient.builder()
+                    .baseUrl(base + "/storage/v1")
+                    .defaultHeader("Authorization", "Bearer " + key)
+                    .defaultHeader("apikey", key)
+                    .build();
+        } else {
+            this.restClient = null;
+        }
     }
 
     public StoredFile saveKycDocument(Long userId, MultipartFile file) {
@@ -35,6 +61,7 @@ public class LocalFileStorage {
     }
 
     private StoredFile save(Long userId, String folderName, MultipartFile file, Set<String> allowed, String label) {
+        requireConfigured();
         if (file == null || file.isEmpty()) {
             return null;
         }
@@ -66,26 +93,135 @@ public class LocalFileStorage {
                     : "Upload a JPG, PNG, or WEBP file.";
             throw new ApiException(HttpStatus.BAD_REQUEST, "FILE_TYPE_INVALID", allowedLabel);
         }
+        String relativePath = folderName + "/" + userId + "/" + UUID.randomUUID() + "." + ext;
         try {
-            Path folder = root.resolve(folderName).resolve(String.valueOf(userId));
-            Files.createDirectories(folder);
-            String storedName = UUID.randomUUID() + "." + ext;
-            Path target = folder.resolve(storedName);
-            try (var in = file.getInputStream()) {
-                Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-            return new StoredFile(root.relativize(target).toString().replace('\\', '/'), original);
+            upload(relativePath, file.getBytes(), contentType(ext, file.getContentType()));
+            return new StoredFile(relativePath, original);
         } catch (IOException ex) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_SAVE_FAILED", "Could not store the " + label.toLowerCase() + ".");
         }
     }
 
-    public Path resolve(String relativePath) {
-        Path path = root.resolve(relativePath).normalize();
-        if (!path.startsWith(root)) {
+    public void upload(String relativePath, byte[] bytes, String contentType) {
+        requireConfigured();
+        try {
+            restClient.post()
+                    .uri(objectUri(relativePath))
+                    .contentType(MediaType.parseMediaType(contentType == null || contentType.isBlank()
+                            ? MediaType.APPLICATION_OCTET_STREAM_VALUE
+                            : contentType))
+                    .header("x-upsert", "true")
+                    .body(bytes)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException ex) {
+            throw new ApiException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "FILE_SAVE_FAILED",
+                    "Could not store file in Supabase Storage (" + ex.getStatusCode().value() + ")."
+            );
+        }
+    }
+
+    public byte[] readBytes(String relativePath) {
+        requireConfigured();
+        try {
+            byte[] body = restClient.get()
+                    .uri(objectUri(relativePath))
+                    .retrieve()
+                    .body(byte[].class);
+            if (body == null || body.length == 0) {
+                throw new ApiException(HttpStatus.NOT_FOUND, "FILE_MISSING", "The file is missing.");
+            }
+            return body;
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 404) {
+                throw new ApiException(HttpStatus.NOT_FOUND, "FILE_MISSING", "The file is missing.");
+            }
+            throw new ApiException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "FILE_READ_FAILED",
+                    "Could not read file from Supabase Storage."
+            );
+        }
+    }
+
+    public Resource asResource(String relativePath, String filename) {
+        byte[] bytes = readBytes(relativePath);
+        String name = filename == null || filename.isBlank() ? relativePath : filename;
+        return new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return name;
+            }
+        };
+    }
+
+    public boolean exists(String relativePath) {
+        if (!configured || relativePath == null || relativePath.isBlank()) {
+            return false;
+        }
+        try {
+            readBytes(relativePath);
+            return true;
+        } catch (ApiException ex) {
+            return false;
+        }
+    }
+
+    public void delete(String relativePath) {
+        if (!configured || relativePath == null || relativePath.isBlank()) {
+            return;
+        }
+        try {
+            restClient.delete()
+                    .uri(objectUri(relativePath))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException ignored) {
+            // Best-effort cleanup
+        }
+    }
+
+    private String objectUri(String relativePath) {
+        StringBuilder uri = new StringBuilder("/object/").append(bucket);
+        for (String part : normalize(relativePath).split("/")) {
+            if (part.isBlank()) {
+                continue;
+            }
+            uri.append('/').append(URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"));
+        }
+        return uri.toString();
+    }
+
+    private void requireConfigured() {
+        if (!configured) {
+            throw new ApiException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "STORAGE_NOT_CONFIGURED",
+                    "Supabase Storage is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY)."
+            );
+        }
+    }
+
+    private static String normalize(String relativePath) {
+        String path = relativePath.replace('\\', '/').replaceAll("^/+", "");
+        if (path.contains("..")) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "FILE_INVALID", "Invalid file path.");
         }
         return path;
+    }
+
+    private static String contentType(String ext, String fallback) {
+        return switch (ext) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "webp" -> "image/webp";
+            case "pdf" -> "application/pdf";
+            case "txt" -> "text/plain";
+            case "md" -> "text/markdown";
+            default -> fallback == null || fallback.isBlank() ? MediaType.APPLICATION_OCTET_STREAM_VALUE : fallback;
+        };
     }
 
     private static String extension(String filename) {

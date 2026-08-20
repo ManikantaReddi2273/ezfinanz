@@ -93,13 +93,15 @@ cd ezfinanz
 
 Ensure PostgreSQL is running. The backend auto-creates the `ezfinanz` database on startup if it does not exist.
 
-Default connection (set in `backend/.env`):
+Default connection (set in `backend/.env` — production uses **Supabase Postgres**):
 
 | Variable | Example |
 |----------|---------|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/ezfinanz` |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://db.<ref>.supabase.co:5432/postgres?sslmode=require` |
 | `SPRING_DATASOURCE_USERNAME` | `postgres` |
-| `SPRING_DATASOURCE_PASSWORD` | your local Postgres password |
+| `SPRING_DATASOURCE_PASSWORD` | your Supabase database password |
+
+Files (KYC, selfies, knowledge docs) are stored in **Supabase Storage** bucket `ezfinanz-files` via `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_ANON_KEY`).
 
 ### 3. Backend
 

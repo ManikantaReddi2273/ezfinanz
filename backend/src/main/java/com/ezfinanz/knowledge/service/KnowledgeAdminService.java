@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Locale;
 
@@ -114,7 +113,7 @@ public class KnowledgeAdminService {
             }
         }
         try {
-            Files.deleteIfExists(fileStorage.resolve(row.getStoredPath()));
+            fileStorage.delete(row.getStoredPath());
         } catch (Exception ignored) {
             // ignore file cleanup failures
         }

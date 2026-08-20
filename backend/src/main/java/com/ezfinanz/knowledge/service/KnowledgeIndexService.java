@@ -9,7 +9,6 @@ import com.ezfinanz.knowledge.domain.KnowledgeDocumentStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +44,8 @@ public class KnowledgeIndexService {
 
     public void index(KnowledgeDocument document) {
         requireReady();
-        Path path = fileStorage.resolve(document.getStoredPath());
-        String text = textExtractor.extract(path, document.getOriginalName());
+        byte[] bytes = fileStorage.readBytes(document.getStoredPath());
+        String text = textExtractor.extract(bytes, document.getOriginalName());
         List<String> chunks = textChunker.chunk(text);
         if (chunks.isEmpty()) {
             throw new ApiException(
