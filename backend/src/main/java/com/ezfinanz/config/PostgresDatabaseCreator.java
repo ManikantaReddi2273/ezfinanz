@@ -46,6 +46,11 @@ public final class PostgresDatabaseCreator {
         String host = matcher.group(1);
         String port = matcher.group(2) != null ? matcher.group(2) : "5432";
         String database = matcher.group(3);
+        // Neon / managed Postgres: databases are created in the console, not by the app.
+        if (host.contains("neon.tech") || host.contains("amazonaws.com") || host.contains("render.com")) {
+            System.out.println("Skipping auto-create for managed host '" + host + "'.");
+            return;
+        }
         if (!TARGET_DATABASE.equals(database)) {
             System.out.println("Skipping auto-create; datasource database is '" + database + "', not '" + TARGET_DATABASE + "'.");
             return;

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ezfinanz-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    healthCheckPath: /swagger-ui.html
