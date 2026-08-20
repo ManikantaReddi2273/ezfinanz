@@ -23,7 +23,7 @@ public class ApplicationLockService {
                 throw new ApiException(
                         HttpStatus.FORBIDDEN,
                         "APPLICATION_LOCKED",
-                        "This application is complete and cannot be changed."
+                        "This application has been submitted and cannot be changed."
                 );
             }
         });

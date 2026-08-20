@@ -1,7 +1,10 @@
 package com.ezfinanz.support.api;
 
+import com.ezfinanz.support.dto.SupportChatRequest;
+import com.ezfinanz.support.dto.SupportChatResponse;
 import com.ezfinanz.support.dto.SupportTicketRequest;
 import com.ezfinanz.support.dto.SupportTicketResponse;
+import com.ezfinanz.support.service.SupportChatService;
 import com.ezfinanz.support.service.SupportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -25,9 +28,11 @@ import java.util.List;
 public class SupportController {
 
     private final SupportService supportService;
+    private final SupportChatService supportChatService;
 
-    public SupportController(SupportService supportService) {
+    public SupportController(SupportService supportService, SupportChatService supportChatService) {
         this.supportService = supportService;
+        this.supportChatService = supportChatService;
     }
 
     @GetMapping
@@ -41,5 +46,11 @@ public class SupportController {
     @Operation(summary = "Send a support message")
     public SupportTicketResponse create(Authentication authentication, @Valid @RequestBody SupportTicketRequest request) {
         return supportService.create((Long) authentication.getPrincipal(), request);
+    }
+
+    @PostMapping("/chat")
+    @Operation(summary = "Ask the EZFINANZ support chatbot (RAG)")
+    public SupportChatResponse chat(Authentication authentication, @Valid @RequestBody SupportChatRequest request) {
+        return supportChatService.chat((Long) authentication.getPrincipal(), request.message());
     }
 }

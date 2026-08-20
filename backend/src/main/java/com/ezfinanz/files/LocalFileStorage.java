@@ -30,6 +30,10 @@ public class LocalFileStorage {
         return save(userId, "selfie", file, Set.of("jpg", "jpeg", "png", "webp"), "Selfie");
     }
 
+    public StoredFile saveKnowledgeDoc(Long documentId, MultipartFile file) {
+        return save(documentId, "knowledge", file, Set.of("txt", "md", "pdf"), "Knowledge document");
+    }
+
     private StoredFile save(Long userId, String folderName, MultipartFile file, Set<String> allowed, String label) {
         if (file == null || file.isEmpty()) {
             return null;
@@ -37,7 +41,7 @@ public class LocalFileStorage {
         if (file.getSize() > 5 * 1024 * 1024) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "FILE_TOO_LARGE", label + " must be 5 MB or smaller.");
         }
-        String original = file.getOriginalFilename() == null ? "photo" : file.getOriginalFilename();
+        String original = file.getOriginalFilename() == null ? "file" : file.getOriginalFilename();
         String ext = extension(original);
         if (ext.isBlank() && file.getContentType() != null) {
             String type = file.getContentType();
@@ -45,6 +49,9 @@ public class LocalFileStorage {
                 case "image/jpeg" -> "jpg";
                 case "image/png" -> "png";
                 case "image/webp" -> "webp";
+                case "application/pdf" -> "pdf";
+                case "text/plain" -> "txt";
+                case "text/markdown" -> "md";
                 default -> "";
             };
         }
@@ -52,7 +59,12 @@ public class LocalFileStorage {
             throw new ApiException(HttpStatus.BAD_REQUEST, "FILE_TYPE_INVALID", "Save or export the photo as JPG or PNG, then upload again.");
         }
         if (!allowed.contains(ext)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "FILE_TYPE_INVALID", "Upload a JPG, PNG, or WEBP file.");
+            String allowedLabel = allowed.contains("txt")
+                    ? "Upload a TXT, MD, or PDF file."
+                    : allowed.contains("pdf") && allowed.contains("jpg")
+                    ? "Upload a JPG, PNG, WEBP, or PDF file."
+                    : "Upload a JPG, PNG, or WEBP file.";
+            throw new ApiException(HttpStatus.BAD_REQUEST, "FILE_TYPE_INVALID", allowedLabel);
         }
         try {
             Path folder = root.resolve(folderName).resolve(String.valueOf(userId));

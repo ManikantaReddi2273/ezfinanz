@@ -2,6 +2,7 @@ package com.ezfinanz.admin.api;
 
 import com.ezfinanz.admin.dto.AdminApplicationDetail;
 import com.ezfinanz.admin.dto.AdminApplicationSummary;
+import com.ezfinanz.admin.dto.ApplicationReviewRequest;
 import com.ezfinanz.admin.dto.SelfieRejectRequest;
 import com.ezfinanz.admin.service.AdminApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,8 +48,13 @@ public class AdminApplicationController {
 
     @PostMapping("/{userId}/selfie/approve")
     @Operation(summary = "Approve the live selfie")
-    public AdminApplicationDetail approve(Authentication authentication, @PathVariable Long userId) {
-        return adminApplicationService.approveSelfie((Long) authentication.getPrincipal(), userId);
+    public AdminApplicationDetail approve(
+            Authentication authentication,
+            @PathVariable Long userId,
+            @RequestBody(required = false) ApplicationReviewRequest request
+    ) {
+        String message = request == null ? null : request.getMessage();
+        return adminApplicationService.approveSelfie((Long) authentication.getPrincipal(), userId, message);
     }
 
     @PostMapping("/{userId}/selfie/reject")

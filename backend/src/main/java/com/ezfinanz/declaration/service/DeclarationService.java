@@ -1,5 +1,6 @@
 package com.ezfinanz.declaration.service;
 
+import com.ezfinanz.application.ApplicationCascadeService;
 import com.ezfinanz.application.ApplicationLockService;
 import com.ezfinanz.auth.domain.User;
 import com.ezfinanz.auth.repo.UserRepository;
@@ -22,17 +23,20 @@ public class DeclarationService {
     private final BankAccountRepository bankAccountRepository;
     private final UserRepository userRepository;
     private final ApplicationLockService applicationLockService;
+    private final ApplicationCascadeService applicationCascadeService;
 
     public DeclarationService(
             DeclarationRepository declarationRepository,
             BankAccountRepository bankAccountRepository,
             UserRepository userRepository,
-            ApplicationLockService applicationLockService
+            ApplicationLockService applicationLockService,
+            ApplicationCascadeService applicationCascadeService
     ) {
         this.declarationRepository = declarationRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.userRepository = userRepository;
         this.applicationLockService = applicationLockService;
+        this.applicationCascadeService = applicationCascadeService;
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +50,7 @@ public class DeclarationService {
     @Transactional
     public DeclarationResponse accept(Long userId, DeclarationRequest request) {
         applicationLockService.requireEditable(userId);
+        boolean updating = declarationRepository.findByUser_Id(userId).map(LoanDeclaration::isAccepted).orElse(false);
         requireBank(userId);
         if (!request.isAccepted()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "DECLARATION_REQUIRED", "Accept the declaration to continue.");
@@ -56,7 +61,11 @@ public class DeclarationService {
         row.setUser(user);
         row.setAccepted(true);
         row.setTermsVersion(TERMS_VERSION);
-        return DeclarationResponse.from(declarationRepository.save(row));
+        DeclarationResponse response = DeclarationResponse.from(declarationRepository.save(row));
+        if (updating) {
+            applicationCascadeService.invalidateAfterDeclaration(userId);
+        }
+        return response;
     }
 
     private void requireBank(Long userId) {

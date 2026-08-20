@@ -23,7 +23,7 @@ public class AdminStaffService {
     public AdminStaffService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            @Value("${app.admin.email:admin@ezfinanz.com}") String superAdminEmail
+            @Value("${app.admin.email:campusworks2273@gmail.com}") String superAdminEmail
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -65,12 +65,29 @@ public class AdminStaffService {
         return AdminAccountResponse.from(admin, false);
     }
 
+    @Transactional
+    public void delete(Long actorId, Long adminId) {
+        requireSuperAdmin(actorId);
+        if (actorId.equals(adminId)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_DELETE_SELF", "You cannot delete your own admin account.");
+        }
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ADMIN_NOT_FOUND", "Admin account not found."));
+        if (admin.getRole() != Role.ADMIN) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "ADMIN_NOT_FOUND", "Admin account not found.");
+        }
+        if (superAdminEmail.equalsIgnoreCase(admin.getEmail())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_DELETE_SUPERADMIN", "The super admin account cannot be deleted.");
+        }
+        userRepository.delete(admin);
+    }
+
     private void requireSuperAdmin(Long actorId) {
         if (!isSuperAdmin(actorId)) {
             throw new ApiException(
                     HttpStatus.FORBIDDEN,
                     "SUPERADMIN_REQUIRED",
-                    "Only the super admin can add new admin accounts."
+                    "Only the super admin can manage admin accounts."
             );
         }
     }

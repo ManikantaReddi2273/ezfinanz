@@ -124,6 +124,7 @@ public class CustomerDashboardService {
             case BANK -> "Bank Account Pending";
             case DECLARATION -> "Declaration Pending";
             case LIVE_SELFIE -> "Selfie Verification Pending";
+            case READY_TO_SUBMIT -> "Ready to Submit";
         };
     }
 
@@ -134,6 +135,8 @@ public class CustomerDashboardService {
         }
         if (snapshot.selfieStatus() != null && SelfieReviewStatus.REJECTED.name().equals(snapshot.selfieStatus())) {
             items.add(new DashboardNotice("selfie-rejected", "Your selfie was rejected. Please capture a clearer photo.", "selfie"));
+        } else if (selfie != null && selfie.getReviewStatus() == SelfieReviewStatus.DRAFT) {
+            items.add(new DashboardNotice("send", "Your application is ready. Review your details and send it from Selfie Verification.", "selfie"));
         } else if (selfie != null && selfie.getReviewStatus() == SelfieReviewStatus.PENDING) {
             items.add(new DashboardNotice("review", "Your selfie is waiting for admin review.", "apply"));
         }

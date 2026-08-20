@@ -93,6 +93,9 @@ public class ApplicationStatusService {
         if (selfie != null && selfie.getReviewStatus() == SelfieReviewStatus.PENDING) {
             return ApplicationStage.WAITING_FOR_ADMIN_REVIEW;
         }
+        if (selfie != null && selfie.getReviewStatus() == SelfieReviewStatus.DRAFT) {
+            return ApplicationStage.READY_TO_SUBMIT;
+        }
         if (selfie != null && selfie.getReviewStatus() == SelfieReviewStatus.REJECTED) {
             return ApplicationStage.SELFIE_REJECTED;
         }

@@ -1,5 +1,6 @@
 package com.ezfinanz.eligibility.service;
 
+import com.ezfinanz.application.ApplicationCascadeService;
 import com.ezfinanz.application.ApplicationLockService;
 import com.ezfinanz.auth.domain.User;
 import com.ezfinanz.auth.repo.UserRepository;
@@ -22,17 +23,20 @@ public class EligibilityService {
     private final UserRepository userRepository;
     private final KycRepository kycRepository;
     private final ApplicationLockService applicationLockService;
+    private final ApplicationCascadeService applicationCascadeService;
 
     public EligibilityService(
             EligibilityRepository eligibilityRepository,
             UserRepository userRepository,
             KycRepository kycRepository,
-            ApplicationLockService applicationLockService
+            ApplicationLockService applicationLockService,
+            ApplicationCascadeService applicationCascadeService
     ) {
         this.eligibilityRepository = eligibilityRepository;
         this.userRepository = userRepository;
         this.kycRepository = kycRepository;
         this.applicationLockService = applicationLockService;
+        this.applicationCascadeService = applicationCascadeService;
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +49,7 @@ public class EligibilityService {
     @Transactional
     public EligibilityResponse assess(Long userId, EligibilityRequest request) {
         applicationLockService.requireEditable(userId);
+        boolean updating = eligibilityRepository.existsByUser_Id(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Not authenticated"));
         if (!user.isFullyVerified()) {
@@ -85,6 +90,10 @@ public class EligibilityService {
         row.setMaxEligibleAmount(outcome.maxEligibleAmount());
         row.setResult(outcome.result());
         row.setReasons(String.join("\n", outcome.reasons()));
-        return EligibilityResponse.from(eligibilityRepository.save(row));
+        EligibilityResponse response = EligibilityResponse.from(eligibilityRepository.save(row));
+        if (updating) {
+            applicationCascadeService.invalidateAfterEligibility(userId);
+        }
+        return response;
     }
 }

@@ -1,5 +1,6 @@
 package com.ezfinanz.kyc.service;
 
+import com.ezfinanz.application.ApplicationCascadeService;
 import com.ezfinanz.application.ApplicationLockService;
 import com.ezfinanz.auth.domain.User;
 import com.ezfinanz.auth.repo.UserRepository;
@@ -29,17 +30,20 @@ public class KycService {
     private final UserRepository userRepository;
     private final LocalFileStorage fileStorage;
     private final ApplicationLockService applicationLockService;
+    private final ApplicationCascadeService applicationCascadeService;
 
     public KycService(
             KycRepository kycRepository,
             UserRepository userRepository,
             LocalFileStorage fileStorage,
-            ApplicationLockService applicationLockService
+            ApplicationLockService applicationLockService,
+            ApplicationCascadeService applicationCascadeService
     ) {
         this.kycRepository = kycRepository;
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
         this.applicationLockService = applicationLockService;
+        this.applicationCascadeService = applicationCascadeService;
     }
 
     @Transactional(readOnly = true)
@@ -64,6 +68,7 @@ public class KycService {
             MultipartFile document
     ) {
         applicationLockService.requireEditable(userId);
+        boolean updating = kycRepository.existsByUser_Id(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Not authenticated"));
         if (!user.isFullyVerified()) {
@@ -97,7 +102,11 @@ public class KycService {
 
         user.setFullName(profile.getFullName());
         userRepository.save(user);
-        return KycResponse.from(kycRepository.save(profile));
+        KycResponse response = KycResponse.from(kycRepository.save(profile));
+        if (updating) {
+            applicationCascadeService.invalidateAfterKyc(userId);
+        }
+        return response;
     }
 
     @Transactional(readOnly = true)

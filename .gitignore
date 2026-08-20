@@ -19,15 +19,23 @@ target/
 
 # Environment & secrets (never commit credentials)
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
 frontend/.env
-frontend/.env.*
+frontend/.env.local
+frontend/.env.*.local
+!frontend/.env.example
 backend/.env
-backend/.env.*
+backend/.env.local
+backend/.env.*.local
+!backend/.env.example
 application-local.properties
 application-local.yml
 application-local.yaml
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
 
 # User uploads (KYC docs, selfies)
 uploads/

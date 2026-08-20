@@ -1,5 +1,6 @@
 package com.ezfinanz.loan.service;
 
+import com.ezfinanz.application.ApplicationCascadeService;
 import com.ezfinanz.application.ApplicationLockService;
 import com.ezfinanz.auth.domain.User;
 import com.ezfinanz.auth.repo.UserRepository;
@@ -26,17 +27,20 @@ public class EmiService {
     private final EligibilityRepository eligibilityRepository;
     private final UserRepository userRepository;
     private final ApplicationLockService applicationLockService;
+    private final ApplicationCascadeService applicationCascadeService;
 
     public EmiService(
             EmiRepository emiRepository,
             EligibilityRepository eligibilityRepository,
             UserRepository userRepository,
-            ApplicationLockService applicationLockService
+            ApplicationLockService applicationLockService,
+            ApplicationCascadeService applicationCascadeService
     ) {
         this.emiRepository = emiRepository;
         this.eligibilityRepository = eligibilityRepository;
         this.userRepository = userRepository;
         this.applicationLockService = applicationLockService;
+        this.applicationCascadeService = applicationCascadeService;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +66,7 @@ public class EmiService {
     @Transactional
     public EmiQuoteResponse save(Long userId, EmiSaveRequest request) {
         applicationLockService.requireEditable(userId);
+        boolean updating = emiRepository.existsByUser_Id(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Not authenticated"));
         EligibilityAssessment eligibility = requireEligible(userId);
@@ -91,7 +96,11 @@ public class EmiService {
         row.setTotalRepayment(quote.totalRepayment());
         row.setNetDisbursement(quote.netDisbursement());
         row.setIrrPercent(quote.irrPercent());
-        return EmiQuoteResponse.fromSaved(min, max, emiRepository.save(row));
+        EmiQuoteResponse response = EmiQuoteResponse.fromSaved(min, max, emiRepository.save(row));
+        if (updating) {
+            applicationCascadeService.invalidateAfterEmi(userId);
+        }
+        return response;
     }
 
     private EligibilityAssessment requireEligible(Long userId) {

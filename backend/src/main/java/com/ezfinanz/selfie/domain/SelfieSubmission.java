@@ -36,7 +36,7 @@ public class SelfieSubmission {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private SelfieReviewStatus reviewStatus = SelfieReviewStatus.PENDING;
+    private SelfieReviewStatus reviewStatus = SelfieReviewStatus.DRAFT;
 
     @Column(length = 500)
     private String rejectionReason;

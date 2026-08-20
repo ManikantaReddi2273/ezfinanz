@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BookOpen,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../auth/AuthContext";
 
 export function AdminLayout({
@@ -23,9 +25,22 @@ export function AdminLayout({
 }) {
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F5F7FB] lg:grid lg:grid-cols-[240px_1fr]">
+      <ConfirmDialog
+        open={logoutOpen}
+        title="Log out?"
+        message="You will need to sign in again to access the admin dashboard."
+        confirmLabel="Log out"
+        tone="red"
+        onConfirm={() => {
+          setLogoutOpen(false);
+          logout();
+        }}
+        onCancel={() => setLogoutOpen(false)}
+      />
       <aside
         className={`fixed inset-y-0 left-0 z-30 flex w-[240px] flex-col bg-[#1E3A8A] text-white transition-transform lg:static lg:translate-x-0 ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
@@ -45,9 +60,10 @@ export function AdminLayout({
           <AdminLink to="/admin" icon={LayoutDashboard} label="Dashboard" end />
           <AdminLink to="/admin/applications" icon={FileText} label="Applications" />
           <AdminLink to="/admin/users" icon={Users} label="Users" />
+          <AdminLink to="/admin/knowledge" icon={BookOpen} label="Knowledge base" />
           <AdminLink to="/admin/settings" icon={Settings} label="Settings" />
         </nav>
-        <button type="button" onClick={logout} className="m-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100 hover:bg-white/10">
+        <button type="button" onClick={() => setLogoutOpen(true)} className="m-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100 hover:bg-white/10">
           <LogOut className="h-4 w-4" />
           Logout
         </button>

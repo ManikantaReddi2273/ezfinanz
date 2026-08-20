@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { customerApi, type CustomerDashboardData, type User } from "../api/client";
 import { formatDateTime, rupee } from "../lib/money";
 import { ApplicationProgress } from "./ApplicationProgress";
-import { completedCount, defaultStep, LOAN_STEPS, type StepId } from "./steps";
+import { completedCount, defaultStep, LOAN_STEPS, isApplicationSubmitted, isReadyToSend, type StepId } from "./steps";
 
 export function DashboardHome({
   user,
@@ -35,7 +35,7 @@ export function DashboardHome({
       <ApplicationProgress user={user} onSelect={onOpenStep} />
 
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.2fr_0.85fr]">
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <section className="hover-card-green hover-lift rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300">
           <h3 className="text-base font-semibold text-slate-900">Application Summary</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <SummaryRow label="Application ID" value={data?.applicationId || `EZF${String(user.id).padStart(9, "0")}`} />
@@ -60,7 +60,7 @@ export function DashboardHome({
           </dl>
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <section className="hover-card-blue hover-lift rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300">
           <h3 className="text-base font-semibold text-slate-900">Loan Status</h3>
           <div className={`mt-4 rounded-xl px-4 py-3 ${status.panelClass}`}>
             <p className="text-xs font-semibold uppercase tracking-wide">{status.toneLabel}</p>
@@ -81,23 +81,36 @@ export function DashboardHome({
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-blue-600" style={{ width: `${(done / 8) * 100}%` }} />
           </div>
-          {!user.disbursed && (
+          {!user.disbursed && !isApplicationSubmitted(user) && (
+            <button
+              type="button"
+              onClick={() => onOpenStep(isReadyToSend(user) ? "selfie" : next)}
+              className={`mt-5 w-full rounded-xl py-3 text-sm font-semibold text-white transition-all duration-200 ${
+                isReadyToSend(user)
+                  ? "btn-hover-green bg-emerald-600 hover:bg-emerald-700"
+                  : "btn-hover-blue bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {isReadyToSend(user) ? "Send application" : status.cta}
+            </button>
+          )}
+          {!user.disbursed && isApplicationSubmitted(user) && (
             <button
               type="button"
               onClick={() => onOpenStep(next)}
-              className="mt-5 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+              className="btn-hover-blue mt-5 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700"
             >
               {status.cta}
             </button>
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <section className="hover-card-orange hover-lift rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300">
           <h3 className="text-base font-semibold text-slate-900">Need Help?</h3>
           <ul className="mt-3 divide-y divide-slate-100">
-            <HelpLink label="FAQs" icon={CircleHelp} onClick={onOpenHelp} />
-            <HelpLink label="How it works?" icon={Waypoints} onClick={onOpenHelp} />
-            <HelpLink label="Contact Support" icon={Headphones} onClick={onOpenHelp} />
+            <HelpLink label="FAQs" icon={CircleHelp} onClick={onOpenHelp} hoverClass="hover-row-blue" />
+            <HelpLink label="How it works?" icon={Waypoints} onClick={onOpenHelp} hoverClass="hover-row-green" />
+            <HelpLink label="Contact Support" icon={Headphones} onClick={onOpenHelp} hoverClass="hover-row-orange" />
           </ul>
         </section>
       </div>
@@ -130,18 +143,28 @@ function loanStatus(user: User, badge?: string | null) {
     return {
       label: "Under Review",
       toneLabel: "Loan status",
-      detail: "Your live selfie is with an administrator. You will be notified after review.",
-      cta: "View selfie",
+      detail: "Your application has been sent and is with an administrator. You will be notified after review.",
+      cta: "View application",
       badgeClass: "bg-amber-50 text-amber-700",
       panelClass: "bg-amber-50 text-amber-950",
     };
   }
+  if (isReadyToSend(user)) {
+    return {
+      label: "Ready to Submit",
+      toneLabel: "Loan status",
+      detail: "All steps are complete. Open Selfie Verification and tap Send Application when you are ready.",
+      cta: "Send application",
+      badgeClass: "bg-emerald-50 text-emerald-700",
+      panelClass: "bg-emerald-50 text-emerald-900",
+    };
+  }
   if (user.selfieStatus === "REJECTED") {
     return {
-      label: "Selfie Rejected",
+      label: "Application Rejected",
       toneLabel: "Loan status",
-      detail: "Please capture a clearer selfie so review can continue.",
-      cta: "Resubmit selfie",
+      detail: "Your application was rejected. Review the admin message, update any required details, capture a new selfie, and send the application again.",
+      cta: "Update & resubmit",
       badgeClass: "bg-rose-50 text-rose-700",
       panelClass: "bg-rose-50 text-rose-900",
     };
@@ -179,19 +202,25 @@ function HelpLink({
   label,
   icon: Icon,
   onClick,
+  hoverClass,
 }: {
   label: string;
   icon: typeof CircleHelp;
   onClick: () => void;
+  hoverClass: string;
 }) {
   return (
     <li>
-      <button type="button" onClick={onClick} className="flex w-full items-center justify-between py-3 text-sm text-slate-700">
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${hoverClass} flex w-full items-center justify-between rounded-lg px-2 py-3 text-sm text-slate-700 transition-all duration-200`}
+      >
         <span className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-blue-600" />
+          <Icon className="h-4 w-4 text-blue-600 transition-colors duration-200" />
           {label}
         </span>
-        <ChevronRight className="h-4 w-4 text-slate-400" />
+        <ChevronRight className="h-4 w-4 text-slate-400 transition-transform duration-200 group-hover:translate-x-0.5" />
       </button>
     </li>
   );

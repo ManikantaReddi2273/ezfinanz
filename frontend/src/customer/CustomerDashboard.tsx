@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { SiteFooter } from "../components/SiteFooter";
 import { customerApi, type DashboardNotice } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { ApplicationProgress } from "./ApplicationProgress";
@@ -24,7 +26,8 @@ import { HelpPage } from "./HelpPage";
 import { KycStep } from "./KycStep";
 import { ProfilePage } from "./ProfilePage";
 import { SelfieStep } from "./SelfieStep";
-import { defaultStep, isStepReadOnly, lockMessage, stepStatus, type StepId } from "./steps";
+import { SupportChatWidget } from "./SupportChatWidget";
+import { defaultStep, isApplicationRejected, isStepReadOnly, lockMessage, canNavigateToStep, isApplicationSubmitted, isReadyToSend, stepStatus, type StepId } from "./steps";
 import { VerificationStep } from "./VerificationStep";
 
 type Page = "home" | "apply" | "profile" | "documents" | "help";
@@ -37,6 +40,7 @@ export function CustomerDashboard() {
   const [lockNote, setLockNote] = useState<string | null>(null);
   const [notices, setNotices] = useState<DashboardNotice[]>([]);
   const [showNotices, setShowNotices] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -85,6 +89,11 @@ export function CustomerDashboard() {
   };
 
   const selectStep = (id: StepId) => {
+    setLockNote(null);
+    if (canNavigateToStep(user, id)) {
+      goToStep(id);
+      return;
+    }
     const status = stepStatus(user, id);
     if (status === "locked") {
       setLockNote(lockMessage(user));
@@ -121,25 +130,25 @@ export function CustomerDashboard() {
           </button>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          <SideLink icon={LayoutDashboard} label="Dashboard" active={page === "home"} onClick={() => openPage("home")} />
-          <SideLink icon={FileText} label="My Application" active={page === "apply"} onClick={() => { setStep(defaultStep(user)); openPage("apply"); }} />
-          <SideLink icon={UserRound} label="Profile" active={page === "profile"} onClick={() => openPage("profile")} />
-          <SideLink icon={FolderOpen} label="Documents" active={page === "documents"} onClick={() => openPage("documents")} />
-          <SideLink icon={HelpCircle} label="Help & Support" active={page === "help"} onClick={() => openPage("help")} />
+          <SideLink icon={LayoutDashboard} label="Dashboard" active={page === "home"} hoverClass="hover-nav-blue" onClick={() => openPage("home")} />
+          <SideLink icon={FileText} label="My Application" active={page === "apply"} hoverClass="hover-nav-green" onClick={() => { setStep(defaultStep(user)); openPage("apply"); }} />
+          <SideLink icon={UserRound} label="Profile" active={page === "profile"} hoverClass="hover-nav-violet" onClick={() => openPage("profile")} />
+          <SideLink icon={FolderOpen} label="Documents" active={page === "documents"} hoverClass="hover-nav-orange" onClick={() => openPage("documents")} />
+          <SideLink icon={HelpCircle} label="Help & Support" active={page === "help"} hoverClass="hover-nav-rose" onClick={() => openPage("help")} />
         </nav>
         <div className="p-4">
-          <div className="rounded-2xl bg-blue-50 p-4">
+          <div className="hover-card-blue hover-lift rounded-2xl border border-transparent bg-blue-50 p-4 transition-all duration-300">
             <p className="text-sm font-semibold text-slate-900">Need Help?</p>
             <p className="mt-1 text-xs text-slate-500">Talk to our support team</p>
             <button
               type="button"
               onClick={() => openPage("help")}
-              className="mt-3 w-full rounded-lg bg-white py-2 text-xs font-semibold text-blue-700 shadow-sm"
+              className="btn-hover-blue mt-3 w-full rounded-lg bg-white py-2 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:bg-blue-50 hover:text-blue-800"
             >
               Contact Support
             </button>
           </div>
-          <button type="button" onClick={logout} className="mt-3 flex w-full items-center gap-2 px-2 py-2 text-sm text-slate-500 hover:text-slate-800">
+          <button type="button" onClick={() => setLogoutOpen(true)} className="hover-nav-rose mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-500 transition-all duration-200">
             <LogOut className="h-4 w-4" />
             Logout
           </button>
@@ -148,7 +157,7 @@ export function CustomerDashboard() {
 
       {menuOpen && <button type="button" className="fixed inset-0 z-20 bg-slate-900/30 lg:hidden" onClick={() => setMenuOpen(false)} />}
 
-      <div>
+      <div className="flex min-h-screen flex-col">
         <header className="flex items-center justify-between px-4 py-5 sm:px-8">
           <div className="flex items-center gap-3">
             <button type="button" className="rounded-lg p-2 text-slate-600 lg:hidden" onClick={() => setMenuOpen(true)}>
@@ -158,7 +167,7 @@ export function CustomerDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <button type="button" className="relative rounded-full p-2 text-slate-500" onClick={() => setShowNotices((open) => !open)}>
+              <button type="button" className="relative rounded-full p-2 text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600" onClick={() => setShowNotices((open) => !open)}>
                 <Bell className="h-5 w-5" />
                 {noticeCount > 0 && (
                   <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
@@ -172,7 +181,7 @@ export function CustomerDashboard() {
                     <button
                       key={notice.id}
                       type="button"
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      className="hover-row-blue block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-all duration-200"
                       onClick={() => {
                         setShowNotices(false);
                         if (notice.target === "verify") {
@@ -201,7 +210,7 @@ export function CustomerDashboard() {
           </div>
         </header>
 
-        <main className="px-4 pb-10 sm:px-8">
+        <main className="flex-1 px-4 pb-10 sm:px-8">
           {page === "home" && (
             <DashboardHome user={user} onOpenStep={selectStep} onOpenHelp={() => openPage("help")} />
           )}
@@ -213,6 +222,24 @@ export function CustomerDashboard() {
               </div>
               {lockNote && (
                 <p className="mb-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">{lockNote}</p>
+              )}
+              {!isApplicationSubmitted(user) && (
+                <p
+                  className={`mb-4 rounded-lg px-4 py-3 text-sm ${
+                    isApplicationRejected(user)
+                      ? "border border-rose-100 bg-rose-50 text-rose-900"
+                      : "border border-blue-100 bg-blue-50 text-blue-900"
+                  }`}
+                >
+                  {isApplicationRejected(user)
+                    ? "Your application was rejected. You can edit any completed step, capture a new selfie, and resubmit for review."
+                    : (
+                      <>
+                        You can go back and edit any completed step before sending your application from Selfie Verification.
+                        {isReadyToSend(user) ? " Your application is ready to send." : ""}
+                      </>
+                    )}
+                </p>
               )}
               {step === "account" && (
                 <section className="mx-auto max-w-[400px] rounded-2xl bg-white p-6 shadow-md">
@@ -241,7 +268,21 @@ export function CustomerDashboard() {
           {page === "documents" && <DocumentsPage />}
           {page === "help" && <HelpPage />}
         </main>
+        <SiteFooter variant="dashboard" />
       </div>
+      <SupportChatWidget />
+      <ConfirmDialog
+        open={logoutOpen}
+        title="Log out?"
+        message="You will need to sign in again to continue your loan application."
+        confirmLabel="Log out"
+        tone="red"
+        onConfirm={() => {
+          setLogoutOpen(false);
+          logout();
+        }}
+        onCancel={() => setLogoutOpen(false)}
+      />
     </div>
   );
 }
@@ -250,22 +291,24 @@ function SideLink({
   icon: Icon,
   label,
   active,
+  hoverClass,
   onClick,
 }: {
   icon: LucideIcon;
   label: string;
   active: boolean;
+  hoverClass: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${
-        active ? "bg-blue-50 font-semibold text-blue-700" : "text-slate-500 hover:bg-slate-50"
+      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200 ${
+        active ? "bg-blue-50 font-semibold text-blue-700" : `text-slate-500 ${hoverClass}`
       }`}
     >
-      <Icon className={`h-4 w-4 ${active ? "text-blue-600" : "text-slate-400"}`} />
+      <Icon className={`h-4 w-4 transition-colors duration-200 ${active ? "text-blue-600" : "text-slate-400"}`} />
       {label}
     </button>
   );

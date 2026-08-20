@@ -19,6 +19,7 @@ import com.ezfinanz.kyc.repo.KycRepository;
 import com.ezfinanz.kyc.service.KycService;
 import com.ezfinanz.loan.dto.EmiQuoteResponse;
 import com.ezfinanz.loan.repo.EmiRepository;
+import com.ezfinanz.notify.EmailOtpService;
 import com.ezfinanz.selfie.domain.SelfieReviewStatus;
 import com.ezfinanz.selfie.domain.SelfieSubmission;
 import com.ezfinanz.selfie.dto.SelfieResponse;
@@ -45,6 +46,7 @@ public class AdminApplicationService {
     private final DeclarationRepository declarationRepository;
     private final SelfieRepository selfieRepository;
     private final SelfieService selfieService;
+    private final EmailOtpService emailOtpService;
 
     public AdminApplicationService(
             UserRepository userRepository,
@@ -56,7 +58,8 @@ public class AdminApplicationService {
             BankAccountRepository bankAccountRepository,
             DeclarationRepository declarationRepository,
             SelfieRepository selfieRepository,
-            SelfieService selfieService
+            SelfieService selfieService,
+            EmailOtpService emailOtpService
     ) {
         this.userRepository = userRepository;
         this.applicationStatusService = applicationStatusService;
@@ -68,6 +71,7 @@ public class AdminApplicationService {
         this.declarationRepository = declarationRepository;
         this.selfieRepository = selfieRepository;
         this.selfieService = selfieService;
+        this.emailOtpService = emailOtpService;
     }
 
     @Transactional(readOnly = true)
@@ -115,24 +119,41 @@ public class AdminApplicationService {
     }
 
     @Transactional
-    public AdminApplicationDetail approveSelfie(Long adminId, Long userId) {
+    public AdminApplicationDetail approveSelfie(Long adminId, Long userId, String message) {
+        User user = requireCustomer(userId);
         SelfieSubmission row = requirePendingSelfie(userId);
         row.setReviewStatus(SelfieReviewStatus.APPROVED);
         row.setRejectionReason(null);
         row.setReviewedAt(Instant.now());
         row.setReviewedByUserId(adminId);
         selfieRepository.save(row);
+        notifyApplicant(
+                user,
+                "Approved",
+                message == null || message.isBlank()
+                        ? "Your application has been approved. We will proceed with the next steps for disbursement."
+                        : message
+        );
         return get(userId);
     }
 
     @Transactional
     public AdminApplicationDetail rejectSelfie(Long adminId, Long userId, String reason) {
+        User user = requireCustomer(userId);
         SelfieSubmission row = requirePendingSelfie(userId);
+        String rejectionReason = reason == null || reason.isBlank() ? null : reason.trim();
         row.setReviewStatus(SelfieReviewStatus.REJECTED);
-        row.setRejectionReason(reason == null || reason.isBlank() ? null : reason.trim());
+        row.setRejectionReason(rejectionReason);
         row.setReviewedAt(Instant.now());
         row.setReviewedByUserId(adminId);
         selfieRepository.save(row);
+        notifyApplicant(
+                user,
+                "Rejected",
+                rejectionReason == null
+                        ? "Your application was rejected. Please review your details, update what is needed, and send the application again."
+                        : rejectionReason
+        );
         return get(userId);
     }
 
@@ -163,6 +184,19 @@ public class AdminApplicationService {
     public Resource selfiePhoto(Long userId) {
         requireCustomer(userId);
         return selfieService.photo(userId);
+    }
+
+    private void notifyApplicant(User user, String statusLabel, String message) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return;
+        }
+        emailOtpService.sendApplicationReviewUpdate(
+                user.getEmail(),
+                user.getFullName(),
+                user.getId(),
+                statusLabel,
+                message
+        );
     }
 
     private AdminApplicationSummary toSummary(User user) {

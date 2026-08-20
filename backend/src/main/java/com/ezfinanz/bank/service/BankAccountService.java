@@ -1,5 +1,6 @@
 package com.ezfinanz.bank.service;
 
+import com.ezfinanz.application.ApplicationCascadeService;
 import com.ezfinanz.application.ApplicationLockService;
 import com.ezfinanz.auth.domain.User;
 import com.ezfinanz.auth.repo.UserRepository;
@@ -20,17 +21,20 @@ public class BankAccountService {
     private final EmiRepository emiRepository;
     private final UserRepository userRepository;
     private final ApplicationLockService applicationLockService;
+    private final ApplicationCascadeService applicationCascadeService;
 
     public BankAccountService(
             BankAccountRepository bankAccountRepository,
             EmiRepository emiRepository,
             UserRepository userRepository,
-            ApplicationLockService applicationLockService
+            ApplicationLockService applicationLockService,
+            ApplicationCascadeService applicationCascadeService
     ) {
         this.bankAccountRepository = bankAccountRepository;
         this.emiRepository = emiRepository;
         this.userRepository = userRepository;
         this.applicationLockService = applicationLockService;
+        this.applicationCascadeService = applicationCascadeService;
     }
 
     @Transactional(readOnly = true)
@@ -44,6 +48,7 @@ public class BankAccountService {
     @Transactional
     public BankAccountResponse save(Long userId, BankAccountRequest request) {
         applicationLockService.requireEditable(userId);
+        boolean updating = bankAccountRepository.existsByUser_Id(userId);
         requireEmi(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Not authenticated"));
@@ -53,7 +58,11 @@ public class BankAccountService {
         row.setAccountNumber(request.getAccountNumber().trim());
         row.setIfscCode(request.getIfscCode().trim().toUpperCase());
         row.setBankName(request.getBankName().trim());
-        return BankAccountResponse.from(bankAccountRepository.save(row));
+        BankAccountResponse response = BankAccountResponse.from(bankAccountRepository.save(row));
+        if (updating) {
+            applicationCascadeService.invalidateAfterBank(userId);
+        }
+        return response;
     }
 
     private void requireEmi(Long userId) {

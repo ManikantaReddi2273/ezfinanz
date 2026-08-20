@@ -17,7 +17,7 @@ export type User = {
   bankCompleted: boolean;
   declarationCompleted: boolean;
   selfieSubmitted: boolean;
-  selfieStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
+  selfieStatus: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | null;
   disbursed: boolean;
   applicationStage: string;
   applicationStageLabel: string;
@@ -319,7 +319,7 @@ export const kycApi = {
 
 export type SelfieStatus = {
   submitted: boolean;
-  reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
+  reviewStatus: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason: string | null;
   submittedAt: string;
   disbursed: boolean;
@@ -330,11 +330,12 @@ export type SelfieStatus = {
 
 export const selfieApi = {
   get: () => api<SelfieStatus>("/api/selfie"),
-  submit: (photo: File) => {
+  confirmDraft: (photo: File) => {
     const form = new FormData();
     form.append("photo", photo);
     return apiForm<SelfieStatus>("/api/selfie", form, "POST");
   },
+  sendApplication: () => api<SelfieStatus>("/api/selfie/send-application", { method: "POST" }),
   photoBlob: () => fetchBlob("/api/selfie/photo"),
 };
 
@@ -378,6 +379,16 @@ export const supportApi = {
       method: "POST",
       body: JSON.stringify({ subject, message }),
     }),
+  chat: (message: string) =>
+    api<SupportChatResponse>("/api/support/chat", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
+};
+
+export type SupportChatResponse = {
+  reply: string;
+  sources: string[];
 };
 
 export type AdminApplicationSummary = {
@@ -415,8 +426,11 @@ export type AdminApplicationDetail = {
 export const adminApi = {
   list: () => api<AdminApplicationSummary[]>("/api/admin/applications"),
   get: (userId: number) => api<AdminApplicationDetail>(`/api/admin/applications/${userId}`),
-  approveSelfie: (userId: number) =>
-    api<AdminApplicationDetail>(`/api/admin/applications/${userId}/selfie/approve`, { method: "POST" }),
+  approveSelfie: (userId: number, message?: string) =>
+    api<AdminApplicationDetail>(`/api/admin/applications/${userId}/selfie/approve`, {
+      method: "POST",
+      body: JSON.stringify({ message: message || undefined }),
+    }),
   rejectSelfie: (userId: number, reason?: string) =>
     api<AdminApplicationDetail>(`/api/admin/applications/${userId}/selfie/reject`, {
       method: "POST",
@@ -432,6 +446,31 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  deleteAdmin: (adminId: number) =>
+    api<void>(`/api/admin/admins/${adminId}`, { method: "DELETE" }),
+  listKnowledgeDocs: () => api<KnowledgeDocument[]>("/api/admin/knowledge/documents"),
+  uploadKnowledgeDoc: (file: File, title?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (title?.trim()) {
+      form.append("title", title.trim());
+    }
+    return apiForm<KnowledgeDocument>("/api/admin/knowledge/documents", form);
+  },
+  deleteKnowledgeDoc: (documentId: number) =>
+    api<void>(`/api/admin/knowledge/documents/${documentId}`, { method: "DELETE" }),
+};
+
+export type KnowledgeDocument = {
+  id: number;
+  title: string;
+  originalName: string;
+  contentType: string | null;
+  status: "PENDING" | "INDEXED" | "FAILED";
+  chunkCount: number;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type AdminAccount = {

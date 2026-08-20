@@ -36,12 +36,18 @@ public class SelfieController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Submit a live selfie or uploaded photo")
-    public SelfieResponse submit(
+    @Operation(summary = "Confirm a live selfie draft (before sending the application)")
+    public SelfieResponse confirmDraft(
             Authentication authentication,
             @RequestParam("photo") MultipartFile photo
     ) {
-        return selfieService.submit((Long) authentication.getPrincipal(), photo);
+        return selfieService.confirmDraft((Long) authentication.getPrincipal(), photo);
+    }
+
+    @PostMapping("/send-application")
+    @Operation(summary = "Send the completed application for admin review")
+    public SelfieResponse sendApplication(Authentication authentication) {
+        return selfieService.sendApplication((Long) authentication.getPrincipal());
     }
 
     @GetMapping("/photo")

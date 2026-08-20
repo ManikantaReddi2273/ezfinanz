@@ -1,7 +1,8 @@
 import { ArrowDownRight, ArrowUpRight, CheckCircle2, ClipboardList, IdCard, Search, ThumbsDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ApiError, adminApi, type AdminAccount, type AdminApplicationSummary } from "../api/client";
+import { ApiError, adminApi, type AdminAccount, type AdminApplicationSummary, type KnowledgeDocument } from "../api/client";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { formatDateTime, rupee } from "../lib/money";
 import { AdminLayout, applicationId, stageBadgeClass } from "./AdminLayout";
 
@@ -28,11 +29,13 @@ export function AdminHome() {
   const [error, setError] = useState<string | null>(null);
   const section = location.pathname.includes("/users")
     ? "users"
-    : location.pathname.includes("/settings")
-      ? "settings"
-      : location.pathname.endsWith("/applications")
-        ? "applications"
-        : "dashboard";
+    : location.pathname.includes("/knowledge")
+      ? "knowledge"
+      : location.pathname.includes("/settings")
+        ? "settings"
+        : location.pathname.endsWith("/applications")
+          ? "applications"
+          : "dashboard";
 
   useEffect(() => {
     adminApi
@@ -74,11 +77,13 @@ export function AdminHome() {
   const title =
     section === "users"
       ? "Users"
-      : section === "settings"
-        ? "Settings"
-        : section === "applications"
-          ? "Applications"
-          : "Admin Dashboard";
+      : section === "knowledge"
+        ? "Knowledge base"
+        : section === "settings"
+          ? "Settings"
+          : section === "applications"
+            ? "Applications"
+            : "Admin Dashboard";
 
   return (
     <AdminLayout
@@ -98,6 +103,7 @@ export function AdminHome() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {section === "users" && <UsersPanel rows={rows} />}
+      {section === "knowledge" && <KnowledgeBasePanel />}
       {section === "settings" && <SettingsPanel />}
 
       {(section === "dashboard" || section === "applications") && (
@@ -271,6 +277,8 @@ function SettingsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     adminApi
@@ -308,8 +316,43 @@ function SettingsPanel() {
     }
   };
 
+  const removeAdmin = async () => {
+    if (deleteId == null) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    setSaved(null);
+    try {
+      await adminApi.deleteAdmin(deleteId);
+      setSaved("Admin account deleted.");
+      setDeleteId(null);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete the admin.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const pendingDelete = admins.find((admin) => admin.id === deleteId);
+
   return (
     <div className={`grid gap-6 ${canCreate ? "lg:grid-cols-[1.1fr_0.9fr]" : ""}`}>
+      <ConfirmDialog
+        open={deleteId != null}
+        title="Delete admin?"
+        message={
+          pendingDelete
+            ? `Remove ${pendingDelete.fullName || "this admin"} (${pendingDelete.email})? They will no longer be able to sign in.`
+            : "Remove this admin account?"
+        }
+        confirmLabel="Delete admin"
+        tone="red"
+        busy={deleting}
+        onConfirm={() => void removeAdmin()}
+        onCancel={() => setDeleteId(null)}
+      />
       {canCreate && (
         <section className="rounded-2xl bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">Add new admin</h2>
@@ -356,22 +399,204 @@ function SettingsPanel() {
       <section className="rounded-2xl bg-white p-6 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">Admin accounts</h2>
         {!canCreate && (
-          <p className="mt-1 text-sm text-slate-500">You can view admin accounts. Only the super admin can add new ones.</p>
+          <p className="mt-1 text-sm text-slate-500">You can view admin accounts. Only the super admin can add or delete them.</p>
         )}
+        {canCreate && (
+          <p className="mt-1 text-sm text-slate-500">You can add or remove admin logins. The super admin cannot be deleted.</p>
+        )}
+        {!canCreate && error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {!canCreate && saved && <p className="mt-3 text-sm text-emerald-700">{saved}</p>}
         <ul className="mt-4 divide-y divide-slate-100 text-sm">
           {admins.map((admin) => (
-            <li key={admin.id} className="py-3">
-              <div className="flex items-center gap-2">
-                <p className="font-medium text-slate-900">{admin.fullName || "Admin"}</p>
-                {admin.superAdmin && (
-                  <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Super admin</span>
-                )}
+            <li key={admin.id} className="flex items-center justify-between gap-3 py-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-slate-900">{admin.fullName || "Admin"}</p>
+                  {admin.superAdmin && (
+                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Super admin</span>
+                  )}
+                </div>
+                <p className="text-slate-500">{admin.email}</p>
               </div>
-              <p className="text-slate-500">{admin.email}</p>
+              {canCreate && !admin.superAdmin && (
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setDeleteId(admin.id)}
+                  className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              )}
             </li>
           ))}
         </ul>
       </section>
     </div>
+  );
+}
+
+function KnowledgeBasePanel() {
+  const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
+  const [title, setTitle] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [canManage, setCanManage] = useState<boolean | null>(null);
+
+  const load = () => {
+    adminApi
+      .listKnowledgeDocs()
+      .then(setDocs)
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load knowledge documents."));
+  };
+
+  useEffect(() => {
+    adminApi
+      .listAdmins()
+      .then((page) => {
+        setCanManage(page.canCreateAdmins);
+        if (page.canCreateAdmins) {
+          load();
+        }
+      })
+      .catch(() => setCanManage(false));
+  }, []);
+
+  const upload = async () => {
+    if (!file) {
+      return;
+    }
+    setUploading(true);
+    setError(null);
+    setSaved(null);
+    try {
+      await adminApi.uploadKnowledgeDoc(file, title.trim() || undefined);
+      setTitle("");
+      setFile(null);
+      setSaved("Document uploaded and indexed for the support chatbot.");
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not upload the document.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeDoc = async () => {
+    if (deleteId == null) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    setSaved(null);
+    try {
+      await adminApi.deleteKnowledgeDoc(deleteId);
+      setDeleteId(null);
+      setSaved("Document removed from the knowledge base.");
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete the document.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const pending = docs.find((doc) => doc.id === deleteId);
+
+  if (canManage === null) {
+    return <p className="text-sm text-slate-500">Loading knowledge base…</p>;
+  }
+
+  if (!canManage) {
+    return (
+      <section className="rounded-2xl bg-white p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-900">Knowledge base</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Only the super admin can upload and manage chatbot knowledge documents.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl bg-white p-6 shadow-sm">
+      <ConfirmDialog
+        open={deleteId != null}
+        title="Delete document?"
+        message={
+          pending
+            ? `Remove "${pending.title}" from the chatbot knowledge base?`
+            : "Remove this document from the knowledge base?"
+        }
+        confirmLabel="Delete document"
+        tone="red"
+        busy={deleting}
+        onConfirm={() => void removeDoc()}
+        onCancel={() => setDeleteId(null)}
+      />
+      <h2 className="text-base font-semibold text-slate-900">Knowledge base</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Upload FAQ, policy, or how-to docs (.txt, .md, .pdf). They power the customer support chatbot via Pinecone + OpenAI.
+        Starter files live in <code className="text-xs">docs/knowledge-base/</code>.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Optional title"
+          className="rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-blue-600"
+        />
+        <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          Choose file
+          <input
+            type="file"
+            accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
+            className="hidden"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] ?? null);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {file && <p className="mt-2 text-xs text-slate-500">Selected: {file.name}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {saved && <p className="mt-3 text-sm text-emerald-700">{saved}</p>}
+      <button
+        type="button"
+        disabled={uploading || !file}
+        onClick={() => void upload()}
+        className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+      >
+        {uploading ? "Indexing…" : "Upload & index"}
+      </button>
+      <ul className="mt-6 divide-y divide-slate-100 text-sm">
+        {docs.length === 0 && <li className="py-3 text-slate-500">No documents indexed yet.</li>}
+        {docs.map((doc) => (
+          <li key={doc.id} className="flex items-start justify-between gap-3 py-3">
+            <div>
+              <p className="font-medium text-slate-900">{doc.title}</p>
+              <p className="text-slate-500">
+                {doc.originalName} · {doc.status}
+                {doc.status === "INDEXED" ? ` · ${doc.chunkCount} chunks` : ""}
+              </p>
+              {doc.errorMessage && <p className="mt-1 text-xs text-rose-600">{doc.errorMessage}</p>}
+            </div>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => setDeleteId(doc.id)}
+              className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

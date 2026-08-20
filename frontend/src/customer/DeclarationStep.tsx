@@ -1,6 +1,7 @@
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, authApi, declarationApi, type DeclarationStatus } from "../api/client";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../auth/AuthContext";
 import { FlowCard, flowPrimary } from "./FlowCard";
 
@@ -12,6 +13,7 @@ export function DeclarationStep({ onContinue, readOnly }: { onContinue: () => vo
   const [terms, setTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     declarationApi
@@ -47,11 +49,22 @@ export function DeclarationStep({ onContinue, readOnly }: { onContinue: () => vo
       setError(err instanceof ApiError ? err.message : "Could not save the declaration.");
     } finally {
       setSaving(false);
+      setConfirmOpen(false);
     }
   };
 
   return (
     <FlowCard>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Accept declaration?"
+        message="Confirm that your information is accurate and you agree to the terms and conditions."
+        confirmLabel="Agree & Continue"
+        tone="blue"
+        busy={saving}
+        onConfirm={() => void confirm()}
+        onCancel={() => setConfirmOpen(false)}
+      />
       <div className="flex justify-center gap-2">
         <FileText className="h-12 w-10 text-blue-600" />
         <FileText className="h-12 w-10 text-blue-500" />
@@ -76,7 +89,7 @@ export function DeclarationStep({ onContinue, readOnly }: { onContinue: () => vo
       {status?.accepted && <p className="mt-3 text-xs text-emerald-700">Already accepted{status.acceptedAt ? ` on ${new Date(status.acceptedAt).toLocaleString()}` : ""}.</p>}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {!readOnly && (
-        <button type="button" disabled={saving || !accepted} onClick={() => void confirm()} className={`${flowPrimary} mt-5`}>
+        <button type="button" disabled={saving || !accepted} onClick={() => setConfirmOpen(true)} className={`${flowPrimary} mt-5`}>
           {saving ? "Saving…" : "Agree & Continue"}
         </button>
       )}

@@ -56,10 +56,26 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.error("Database constraint error", ex);
+        String detail = rootMessage(ex);
+        String lower = detail.toLowerCase();
+        if (lower.contains("selfie_submissions") || lower.contains("review_status")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(
+                            "SELFIE_SAVE_CONFLICT",
+                            "Could not save the selfie. Please retake the photo and try Confirm Selfie again."
+                    ));
+        }
+        if (lower.contains("email") || lower.contains("phone") || lower.contains("users")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(
+                            "DATA_CONFLICT",
+                            "This email or phone number is already registered to another account."
+                    ));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(
                         "DATA_CONFLICT",
-                        "This email or phone number is already registered to another account."
+                        "Could not save this change because it conflicts with existing data."
                 ));
     }
 
@@ -90,5 +106,13 @@ public class ApiExceptionHandler {
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("INTERNAL_ERROR", message));
+    }
+
+    private static String rootMessage(Throwable ex) {
+        Throwable current = ex;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current.getMessage() == null ? "" : current.getMessage();
     }
 }

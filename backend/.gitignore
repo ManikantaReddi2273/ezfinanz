@@ -10,6 +10,8 @@ target/
 .vscode/
 *.log
 .env
+.env.local
+!.env.example
 application-local.properties
 application-local.yml
 uploads/

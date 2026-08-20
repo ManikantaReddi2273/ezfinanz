@@ -15,7 +15,6 @@ public final class PostgresDatabaseCreator {
 
     private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/ezfinanz";
     private static final String DEFAULT_USER = "postgres";
-    private static final String DEFAULT_PASSWORD = "reddi2273";
     private static final String TARGET_DATABASE = "ezfinanz";
     private static final Pattern JDBC_URL = Pattern.compile(
             "^jdbc:postgresql://([^/:]+)(?::(\\d+))?/([^?]+)"
@@ -26,18 +25,17 @@ public final class PostgresDatabaseCreator {
 
     public static void ensureDatabaseExists() {
         String appUrl = firstNonBlank(
-                System.getenv("SPRING_DATASOURCE_URL"),
+                envOrProp("SPRING_DATASOURCE_URL"),
                 DEFAULT_URL
         );
         String username = firstNonBlank(
-                System.getenv("SPRING_DATASOURCE_USERNAME"),
-                System.getenv("POSTGRES_USER"),
+                envOrProp("SPRING_DATASOURCE_USERNAME"),
+                envOrProp("POSTGRES_USER"),
                 DEFAULT_USER
         );
         String password = firstNonBlank(
-                System.getenv("SPRING_DATASOURCE_PASSWORD"),
-                System.getenv("POSTGRES_PASSWORD"),
-                DEFAULT_PASSWORD
+                envOrProp("SPRING_DATASOURCE_PASSWORD"),
+                envOrProp("POSTGRES_PASSWORD")
         );
 
         Matcher matcher = JDBC_URL.matcher(appUrl);
@@ -80,6 +78,10 @@ public final class PostgresDatabaseCreator {
                     e
             );
         }
+    }
+
+    private static String envOrProp(String key) {
+        return firstNonBlank(System.getenv(key), System.getProperty(key));
     }
 
     private static String firstNonBlank(String... values) {

@@ -1,4 +1,3 @@
-import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, authApi, emiApi, type EmiQuote } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -10,7 +9,6 @@ export function EmiTermsPanel({ onContinue, readOnly }: { onContinue: () => void
   const [quote, setQuote] = useState<EmiQuote | null>(null);
   const [amount, setAmount] = useState<number | null>(null);
   const [tenure, setTenure] = useState(24);
-  const [editingAmount, setEditingAmount] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -83,10 +81,6 @@ export function EmiTermsPanel({ onContinue, readOnly }: { onContinue: () => void
     return () => window.clearTimeout(handle);
   }, [amount, tenure, ready]);
 
-  const min = quote?.minAmount ?? 25000;
-  const max = quote?.maxAmount ?? 25000;
-  const currentAmount = amount ?? min;
-
   const confirm = async () => {
     if (amount == null) {
       return;
@@ -117,29 +111,7 @@ export function EmiTermsPanel({ onContinue, readOnly }: { onContinue: () => void
       <dl className="space-y-2 text-sm">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-slate-500">Loan Amount</dt>
-          <dd className="flex items-center gap-2 font-semibold text-slate-900">
-            {editingAmount && !readOnly ? (
-              <input
-                type="number"
-                min={min}
-                max={max}
-                step={1000}
-                value={currentAmount}
-                onChange={(event) => setAmount(Number(event.target.value))}
-                onBlur={() => setEditingAmount(false)}
-                className="w-28 rounded border border-blue-200 px-2 py-1 text-right text-sm"
-              />
-            ) : (
-              <>
-                {rupee.format(quote.principal)}
-                {!readOnly && (
-                  <button type="button" onClick={() => setEditingAmount(true)} className="text-blue-600">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </>
-            )}
-          </dd>
+          <dd className="font-semibold text-slate-900">{rupee.format(quote.principal)}</dd>
         </div>
         <Row label="Interest Rate (p.a)" value={`${quote.annualInterestPercent}%`} />
         <Row label="Processing Fee" value={rupeeExact.format(quote.processingFee)} />

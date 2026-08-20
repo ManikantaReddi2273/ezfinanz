@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, authApi, selfieApi, type SelfieStatus } from "../api/client";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../auth/AuthContext";
-import { CheckCircle2, CircleAlert, Glasses, Sun, UserRound } from "lucide-react";
-import { FlowCard, flowPrimary } from "./FlowCard";
+import { CheckCircle2, CircleAlert, Glasses, Send, Sun, UserRound } from "lucide-react";
+import { FlowCard, flowGhost, flowPrimary } from "./FlowCard";
+import { isApplicationRejected, isReadyToSend } from "./steps";
+
+type PendingAction = "confirm" | "send" | null;
 
 export function SelfieStep({ readOnly }: { readOnly?: boolean }) {
   const { user, updateUser } = useAuth();
@@ -11,9 +15,13 @@ export function SelfieStep({ readOnly }: { readOnly?: boolean }) {
   const cameraSession = useRef(0);
   const [status, setStatus] = useState<SelfieStatus | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [retaking, setRetaking] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const stopCamera = () => {
     cameraSession.current += 1;
@@ -67,46 +75,43 @@ export function SelfieStep({ readOnly }: { readOnly?: boolean }) {
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    selfieApi
-      .get()
-      .then(async (row) => {
-        if (cancelled) {
-          return;
-        }
-        setStatus(row);
-        try {
-          const blob = await selfieApi.photoBlob();
-          if (!cancelled) {
-            setPreview(URL.createObjectURL(blob));
-          }
-        } catch {
-          if (!cancelled) {
-            setPreview(null);
-          }
-        }
-      })
-      .catch((err) => {
-        if (cancelled) {
-          return;
-        }
-        if (!(err instanceof ApiError) || err.status !== 404) {
-          setError(err instanceof ApiError ? err.message : "Could not load selfie status.");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const loadSavedSelfie = async () => {
+    try {
+      const row = await selfieApi.get();
+      setStatus(row);
+      try {
+        const blob = await selfieApi.photoBlob();
+        setPreview(URL.createObjectURL(blob));
+      } catch {
+        setPreview(null);
+      }
+      return row;
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 404) {
+        setError(err instanceof ApiError ? err.message : "Could not load selfie status.");
+      }
+      return null;
+    }
+  };
 
   useEffect(() => {
-    const alreadyDone =
-      readOnly || user?.disbursed || user?.selfieStatus === "APPROVED" || user?.selfieStatus === "PENDING";
-    if (!alreadyDone) {
+    let cancelled = false;
+    loadSavedSelfie().then((row) => {
+      if (
+        cancelled ||
+        readOnly ||
+        row?.reviewStatus === "DRAFT" ||
+        row?.reviewStatus === "PENDING" ||
+        row?.reviewStatus === "REJECTED"
+      ) {
+        return;
+      }
       void startCamera();
-    }
-    return () => stopCamera();
+    });
+    return () => {
+      cancelled = true;
+      stopCamera();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -136,135 +141,272 @@ export function SelfieStep({ readOnly }: { readOnly?: boolean }) {
       return;
     }
     const file = blobToFile(blob, "live-selfie.jpg");
+    setPendingFile(file);
     setPreview(URL.createObjectURL(blob));
     stopCamera();
-    await submitFile(file);
   };
 
-  const submitFile = async (photo: File) => {
+  const retake = () => {
+    setRetaking(true);
+    setPendingFile(null);
+    setPreview(null);
+    setError(null);
+    void startCamera();
+  };
+
+  const confirmSelfie = async () => {
+    if (!pendingFile) {
+      setError("Capture or upload a selfie first.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const row = await selfieApi.submit(photo);
+      const row = await selfieApi.confirmDraft(pendingFile);
       setStatus(row);
+      setPendingFile(null);
+      setRetaking(false);
       updateUser(await authApi.me());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not save the selfie.");
     } finally {
       setSaving(false);
+      setPendingAction(null);
+    }
+  };
+
+  const sendApplication = async () => {
+    setSending(true);
+    setError(null);
+    try {
+      const row = await selfieApi.sendApplication();
+      setStatus(row);
+      updateUser(await authApi.me());
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not send the application.");
+    } finally {
+      setSending(false);
+      setPendingAction(null);
     }
   };
 
   const pending = status?.reviewStatus === "PENDING";
   const approved = status?.reviewStatus === "APPROVED";
   const rejected = status?.reviewStatus === "REJECTED";
-  const canCapture = !readOnly && !approved && !status?.disbursed;
+  const draft = status?.reviewStatus === "DRAFT" && !retaking;
+  const awaitingConfirm = Boolean(pendingFile);
+  const resubmitting = rejected && !retaking && !draft && !awaitingConfirm;
+  const canCapture = !readOnly && !approved && !status?.disbursed && !pending && !draft && !awaitingConfirm && !resubmitting;
+  const readyToSend = Boolean(user && isReadyToSend(user));
+  const canSendApplication = Boolean(draft || readyToSend) && Boolean(
+    user?.declarationCompleted && user?.bankCompleted && user?.emiCompleted && user?.eligibilityPassed,
+  );
+  const showEditableBanner = !readOnly && !pending && !approved && !status?.disbursed;
 
   return (
     <FlowCard>
-    <div className="text-center">
-      <p className="text-sm leading-6 text-slate-600">Please look into the camera and take a clear selfie.</p>
+      <ConfirmDialog
+        open={pendingAction === "confirm"}
+        title="Confirm selfie?"
+        message="Save this photo as your selfie? You can retake it before sending your application."
+        confirmLabel="Confirm Selfie"
+        tone="blue"
+        busy={saving}
+        onConfirm={() => void confirmSelfie()}
+        onCancel={() => setPendingAction(null)}
+      />
+      <ConfirmDialog
+        open={pendingAction === "send"}
+        title="Send application?"
+        message={
+          isApplicationRejected(user!)
+            ? "Send your updated application for admin review again? Make sure you have reviewed all steps and captured a new selfie."
+            : "Submit your application for admin review? You will not be able to edit details after sending."
+        }
+        confirmLabel="Send Application"
+        tone="green"
+        busy={sending}
+        onConfirm={() => void sendApplication()}
+        onCancel={() => setPendingAction(null)}
+      />
 
-      {pending && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
-          Waiting for Admin Review. Your selfie was saved on the server.
-        </div>
-      )}
-      {rejected && (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-left text-sm text-rose-900">
-          Selfie rejected. {status?.rejectionReason || "Please capture a clearer photo."}
-        </div>
-      )}
-      {approved && !status?.disbursed && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-900">
-          <CheckCircle2 className="h-5 w-5 shrink-0" /> Selfie approved. Waiting for disbursement.
-        </div>
-      )}
-      {status?.disbursed && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-900">
-          <CheckCircle2 className="h-5 w-5 shrink-0" /> Loan disbursed to your registered bank account.
-        </div>
-      )}
+      <div className="text-center">
+        <p className="text-sm leading-6 text-slate-600">
+          Please look into the camera and take a clear selfie. Confirm it before sending your application.
+        </p>
 
-      <div className="relative mx-auto mt-6 h-64 w-64 overflow-hidden rounded-full border-4 border-blue-100 bg-slate-100">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        {!cameraOn && preview && (
-          <img src={preview} alt="Selfie" className="absolute inset-0 h-full w-full object-cover" />
-        )}
-        {!cameraOn && !preview && (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-            <UserRound className="h-16 w-16" />
+        {showEditableBanner && (
+          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-left text-sm text-blue-900">
+            {rejected
+              ? "Your application was rejected. You can edit any previous step, capture a new selfie, and send the application again."
+              : (
+                <>
+                  You can still edit any previous step before tapping <strong>Send Application</strong>.
+                </>
+              )}
           </div>
         )}
-      </div>
 
-      <div className="mt-5 flex justify-center gap-6 text-xs text-slate-500">
-        <span className="flex flex-col items-center gap-1">
-          <Sun className="h-4 w-4 text-blue-600" /> Good lighting
-        </span>
-        <span className="flex flex-col items-center gap-1">
-          <Glasses className="h-4 w-4 text-blue-600" /> No cap / glasses
-        </span>
-        <span className="flex flex-col items-center gap-1">
-          <UserRound className="h-4 w-4 text-blue-600" /> Clear face
-        </span>
-      </div>
+        {pending && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+            Waiting for Admin Review. Your application has been sent successfully.
+          </div>
+        )}
+        {draft && !pending && (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-900">
+            Selfie confirmed. Review your details, then send the application when you are ready.
+          </div>
+        )}
+        {rejected && !retaking && !draft && (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-left text-sm text-rose-900">
+            <p className="font-semibold">Application rejected</p>
+            <p className="mt-1">{status?.rejectionReason || "Please review your details and capture a clearer selfie."}</p>
+            <p className="mt-2 text-xs text-rose-800">Tap Retake Photo below to capture a new selfie, then send your application again.</p>
+          </div>
+        )}
+        {approved && !status?.disbursed && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-900">
+            <CheckCircle2 className="h-5 w-5 shrink-0" /> Selfie approved. Waiting for disbursement.
+          </div>
+        )}
+        {status?.disbursed && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-900">
+            <CheckCircle2 className="h-5 w-5 shrink-0" /> Loan disbursed to your registered bank account.
+          </div>
+        )}
 
-      {canCapture && (
-        <div className="mt-6 space-y-3">
-          {cameraOn ? (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void capture()}
-              className={flowPrimary}
-            >
-              {saving ? "Saving…" : "Capture Photo"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void startCamera()}
-              className={flowPrimary}
-            >
-              {saving ? "Saving…" : "Capture Photo"}
-            </button>
+        <div className="relative mx-auto mt-6 h-64 w-64 overflow-hidden rounded-full border-4 border-blue-100 bg-slate-100">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`absolute inset-0 h-full w-full object-cover ${cameraOn ? "" : "opacity-0"}`}
+          />
+          {!cameraOn && preview && (
+            <img src={preview} alt="Selfie" className="absolute inset-0 h-full w-full object-cover" />
           )}
-          <label className="block cursor-pointer text-sm font-semibold text-blue-700">
-            Upload from Gallery
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/*"
-              className="hidden"
-              onChange={(event) => {
-                const next = event.target.files?.[0];
-                event.target.value = "";
-                if (!next) {
-                  return;
-                }
-                setPreview(URL.createObjectURL(next));
-                stopCamera();
-                void submitFile(next);
-              }}
-            />
-          </label>
-          <p className="text-xs text-slate-400">Saved for admin review.</p>
+          {!cameraOn && !preview && (
+            <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+              <UserRound className="h-16 w-16" />
+            </div>
+          )}
         </div>
-      )}
-      {error && (
-        <p className="mt-3 flex items-center justify-center gap-1 text-sm text-red-600">
-          <CircleAlert className="h-4 w-4" />
-          {error}
-        </p>
-      )}
-    </div>
+
+        <div className="mt-5 flex justify-center gap-6 text-xs text-slate-500">
+          <span className="flex flex-col items-center gap-1">
+            <Sun className="h-4 w-4 text-blue-600" /> Good lighting
+          </span>
+          <span className="flex flex-col items-center gap-1">
+            <Glasses className="h-4 w-4 text-blue-600" /> No cap / glasses
+          </span>
+          <span className="flex flex-col items-center gap-1">
+            <UserRound className="h-4 w-4 text-blue-600" /> Clear face
+          </span>
+        </div>
+
+        {awaitingConfirm && (
+          <div className="mt-6 space-y-3">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => setPendingAction("confirm")}
+              className={flowPrimary}
+            >
+              {saving ? "Saving…" : "Confirm Selfie"}
+            </button>
+            <button type="button" disabled={saving} onClick={retake} className={flowGhost}>
+              Retake Photo
+            </button>
+          </div>
+        )}
+
+        {resubmitting && (
+          <div className="mt-6 space-y-3">
+            <button type="button" disabled={saving} onClick={retake} className={flowPrimary}>
+              Retake Photo
+            </button>
+            <label className="block cursor-pointer text-sm font-semibold text-blue-700">
+              Upload from Gallery
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const next = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!next) {
+                    return;
+                  }
+                  setRetaking(true);
+                  setPendingFile(next);
+                  setPreview(URL.createObjectURL(next));
+                  stopCamera();
+                }}
+              />
+            </label>
+          </div>
+        )}
+
+        {canCapture && (
+          <div className="mt-6 space-y-3">
+            {cameraOn ? (
+              <button type="button" disabled={saving} onClick={() => void capture()} className={flowPrimary}>
+                Capture Photo
+              </button>
+            ) : (
+              <button type="button" disabled={saving} onClick={() => void startCamera()} className={flowPrimary}>
+                Open Camera
+              </button>
+            )}
+            <label className="block cursor-pointer text-sm font-semibold text-blue-700">
+              Upload from Gallery
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const next = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!next) {
+                    return;
+                  }
+                  setPendingFile(next);
+                  setPreview(URL.createObjectURL(next));
+                  stopCamera();
+                }}
+              />
+            </label>
+          </div>
+        )}
+
+        {(draft || readyToSend) && !pending && !approved && !status?.disbursed && (
+          <div className="mt-6 space-y-3">
+            <button
+              type="button"
+              disabled={sending || !canSendApplication}
+              onClick={() => setPendingAction("send")}
+              className="btn-hover-green flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60"
+            >
+              <Send className="h-4 w-4" />
+              {sending ? "Sending…" : rejected ? "Resubmit Application" : "Send Application"}
+            </button>
+            {!canSendApplication && (
+              <p className="text-xs text-slate-500">Complete all previous steps before sending your application.</p>
+            )}
+            <button type="button" disabled={saving || sending} onClick={retake} className={flowGhost}>
+              Retake Photo
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <p className="mt-3 flex items-center justify-center gap-1 text-sm text-red-600">
+            <CircleAlert className="h-4 w-4" />
+            {error}
+          </p>
+        )}
+      </div>
     </FlowCard>
   );
 }

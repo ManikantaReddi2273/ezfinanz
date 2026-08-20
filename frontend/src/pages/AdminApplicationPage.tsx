@@ -2,10 +2,12 @@ import { ArrowLeft, Check, Download, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, adminApi, type AdminApplicationDetail } from "../api/client";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { formatDateTime, rupee, rupeeExact } from "../lib/money";
 import { AdminLayout, applicationId, stageBadgeClass } from "./AdminLayout";
 
 type Tab = "summary" | "kyc" | "eligibility" | "emi" | "bank" | "declaration" | "documents";
+type PendingAction = "approve" | "reject" | "disburse" | null;
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "summary", label: "Summary" },
@@ -22,11 +24,12 @@ export function AdminApplicationPage() {
   const id = Number(userId);
   const [detail, setDetail] = useState<AdminApplicationDetail | null>(null);
   const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("documents");
   const [zoom, setZoom] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const load = async () => {
     const row = await adminApi.get(id);
@@ -62,6 +65,7 @@ export function AdminApplicationPage() {
       setError(err instanceof ApiError ? err.message : "Action failed.");
     } finally {
       setBusy(false);
+      setPendingAction(null);
     }
   };
 
@@ -92,6 +96,37 @@ export function AdminApplicationPage() {
 
   return (
     <AdminLayout title="Application Detail (Admin View)">
+      <ConfirmDialog
+        open={pendingAction === "approve"}
+        title="Approve application?"
+        message={`Approve this application and notify ${detail.email || "the applicant"} by email?`}
+        confirmLabel="Approve"
+        tone="green"
+        busy={busy}
+        onConfirm={() => void run(() => adminApi.approveSelfie(id, message.trim() || undefined))}
+        onCancel={() => setPendingAction(null)}
+      />
+      <ConfirmDialog
+        open={pendingAction === "reject"}
+        title="Reject application?"
+        message={`Reject this application and notify ${detail.email || "the applicant"} by email?`}
+        confirmLabel="Reject"
+        tone="red"
+        busy={busy}
+        onConfirm={() => void run(() => adminApi.rejectSelfie(id, message.trim() || undefined))}
+        onCancel={() => setPendingAction(null)}
+      />
+      <ConfirmDialog
+        open={pendingAction === "disburse"}
+        title="Confirm disbursement?"
+        message="Mark this loan as disbursed to the applicant's registered bank account?"
+        confirmLabel="Confirm disbursement"
+        tone="blue"
+        busy={busy}
+        onConfirm={() => void run(() => adminApi.disburse(id))}
+        onCancel={() => setPendingAction(null)}
+      />
+
       <Link to="/admin/applications" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700">
         <ArrowLeft className="h-4 w-4" /> Back to Applications
       </Link>
@@ -112,7 +147,7 @@ export function AdminApplicationPage() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => run(() => adminApi.approveSelfie(id))}
+                onClick={() => setPendingAction("approve")}
                 className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
                 Approve Application
@@ -120,7 +155,7 @@ export function AdminApplicationPage() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => run(() => adminApi.rejectSelfie(id, reason || "Rejected by admin"))}
+                onClick={() => setPendingAction("reject")}
                 className="rounded-lg border border-rose-400 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60"
               >
                 Reject Application
@@ -131,7 +166,7 @@ export function AdminApplicationPage() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => run(() => adminApi.disburse(id))}
+              onClick={() => setPendingAction("disburse")}
               className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               Confirm disbursement
@@ -141,13 +176,15 @@ export function AdminApplicationPage() {
       </div>
 
       {pending && (
-        <textarea
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          placeholder="Optional reject reason"
-          rows={2}
-          className="mt-4 w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-600"
-        />
+        <div className="mt-4 max-w-xl">
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder="Optional message to the applicant (sent by email on approve or reject)"
+            rows={3}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-600"
+          />
+        </div>
       )}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 

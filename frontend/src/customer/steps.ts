@@ -31,6 +31,69 @@ export const LOAN_STEPS: LoanStep[] = [
   { id: "selfie", number: 8, label: "Selfie Verification", hint: "Admin review" },
 ];
 
+export function isApplicationRejected(user: User): boolean {
+  return user.selfieStatus === "REJECTED";
+}
+
+export function isApplicationSubmitted(user: User): boolean {
+  return Boolean(
+    user.disbursed || user.selfieStatus === "APPROVED" || user.selfieStatus === "PENDING",
+  );
+}
+
+export function isSelfieDraft(user: User): boolean {
+  return user.selfieStatus === "DRAFT";
+}
+
+export function isReadyToSend(user: User): boolean {
+  return Boolean(
+    isSelfieDraft(user) &&
+      user.declarationCompleted &&
+      user.bankCompleted &&
+      user.emiCompleted &&
+      user.eligibilityPassed,
+  );
+}
+
+export function maxReachableStepIndex(user: User): number {
+  if (user.selfieSubmitted && user.selfieStatus !== "REJECTED") {
+    return 7;
+  }
+  if (user.declarationCompleted) {
+    return 7;
+  }
+  if (user.bankCompleted) {
+    return 6;
+  }
+  if (user.emiCompleted) {
+    return 5;
+  }
+  if (user.eligibilityPassed) {
+    return 4;
+  }
+  if (user.eligibilityCompleted) {
+    return 3;
+  }
+  if (user.kycCompleted) {
+    return 2;
+  }
+  if (isFullyVerified(user)) {
+    return 1;
+  }
+  return 0;
+}
+
+export function canNavigateToStep(user: User, stepId: StepId): boolean {
+  if (stepId === "account") {
+    return true;
+  }
+  if (isApplicationSubmitted(user)) {
+    return stepStatus(user, stepId) !== "locked";
+  }
+  const idx = LOAN_STEPS.findIndex((step) => step.id === stepId);
+  return idx >= 0 && idx <= maxReachableStepIndex(user);
+}
+
 export function stepStatus(user: User, stepId: StepId): StepStatus {
   const verified = isFullyVerified(user);
   const kycDone = Boolean(user.kycCompleted);
@@ -77,33 +140,25 @@ export function stepStatus(user: User, stepId: StepId): StepStatus {
     if (!user.declarationCompleted) {
       return "locked";
     }
-    if (user.disbursed || user.selfieStatus === "APPROVED" || (user.selfieSubmitted && user.selfieStatus === "PENDING")) {
+    if (user.disbursed || user.selfieStatus === "APPROVED" || user.selfieStatus === "PENDING" || user.selfieStatus === "DRAFT") {
       return "complete";
+    }
+    if (user.selfieStatus === "REJECTED") {
+      return "current";
     }
     return "current";
   }
   return "locked";
 }
 
-export function isApplicationSubmitted(user: User): boolean {
-  return Boolean(
-    user.disbursed ||
-      user.selfieStatus === "APPROVED" ||
-      (user.selfieSubmitted && user.selfieStatus === "PENDING"),
-  );
-}
-
 export function isStepReadOnly(user: User, stepId: StepId): boolean {
-  if (stepId === "selfie" && user.selfieStatus === "REJECTED") {
-    return false;
-  }
   if (isApplicationSubmitted(user)) {
     return true;
   }
-  if (stepId === "eligibility" && !user.eligibilityPassed) {
-    return false;
+  if (stepId === "account") {
+    return true;
   }
-  return stepStatus(user, stepId) === "complete";
+  return false;
 }
 
 export function defaultStep(user: User): StepId {
@@ -124,6 +179,12 @@ export function defaultStep(user: User): StepId {
   }
   if (!user.declarationCompleted) {
     return "declaration";
+  }
+  if (isReadyToSend(user)) {
+    return "selfie";
+  }
+  if (!user.selfieSubmitted || user.selfieStatus === "REJECTED") {
+    return "selfie";
   }
   return "selfie";
 }
@@ -171,7 +232,7 @@ export function lockMessage(user: User): string {
     return "Add a disbursement bank account before the declaration.";
   }
   if (!user.declarationCompleted) {
-    return "Accept the declaration before submitting a live selfie.";
+    return "Accept the declaration before confirming your selfie.";
   }
   return "Complete the previous step before continuing.";
 }

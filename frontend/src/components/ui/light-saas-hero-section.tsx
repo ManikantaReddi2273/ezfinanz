@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Lottie } from "lottie-react";
 import { IndianRupee, PlayCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { Renderer, Program, Mesh, Triangle } from "ogl";
+import { SiteFooter } from "@/components/SiteFooter";
 
 interface PlasmaProps {
   color?: string;
@@ -510,6 +511,10 @@ export function HeroSection({
       <div className="absolute left-10 top-1/4 h-6 w-6 rounded-full bg-blue-200/40 blur-xl" />
       <div className="absolute bottom-1/3 right-16 h-10 w-10 rounded-full bg-indigo-200/30 blur-xl" />
       <div className="absolute right-1/4 top-1/3 h-8 w-8 rounded-full bg-blue-200/40 blur-xl" />
+
+      <div className="relative z-10">
+        <SiteFooter variant="landing" />
+      </div>
     </div>
   );
 }
