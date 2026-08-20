@@ -1,0 +1,45 @@
+package com.ezfinanz.support.api;
+
+import com.ezfinanz.support.dto.SupportTicketRequest;
+import com.ezfinanz.support.dto.SupportTicketResponse;
+import com.ezfinanz.support.service.SupportService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/support")
+@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "Support", description = "Customer help requests")
+public class SupportController {
+
+    private final SupportService supportService;
+
+    public SupportController(SupportService supportService) {
+        this.supportService = supportService;
+    }
+
+    @GetMapping
+    @Operation(summary = "List this customer's support messages")
+    public List<SupportTicketResponse> list(Authentication authentication) {
+        return supportService.list((Long) authentication.getPrincipal());
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Send a support message")
+    public SupportTicketResponse create(Authentication authentication, @Valid @RequestBody SupportTicketRequest request) {
+        return supportService.create((Long) authentication.getPrincipal(), request);
+    }
+}
