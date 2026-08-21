@@ -1,3 +1,7 @@
+/**
+ * Admin console home: dashboard stats, applications table, users, knowledge, settings.
+ * Section is chosen from the current `/admin/*` pathname.
+ */
 import { ArrowDownRight, ArrowUpRight, CheckCircle2, ClipboardList, IdCard, Search, ThumbsDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -20,6 +24,7 @@ function weekDelta(rows: AdminApplicationSummary[], match: (row: AdminApplicatio
   return Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
 }
 
+/** Multi-section admin hub (applications list, staff, knowledge uploads, settings). */
 export function AdminHome() {
   const location = useLocation();
   const [rows, setRows] = useState<AdminApplicationSummary[]>([]);

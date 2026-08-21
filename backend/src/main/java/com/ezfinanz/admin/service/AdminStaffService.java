@@ -13,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Super-admin management of staff admin accounts (list, create, delete).
+ */
 @Service
 public class AdminStaffService {
 
@@ -30,6 +33,7 @@ public class AdminStaffService {
         this.superAdminEmail = superAdminEmail.trim().toLowerCase();
     }
 
+    /** Returns admin accounts plus whether the actor may create more admins. */
     @Transactional(readOnly = true)
     public AdminStaffPage page(Long actorId) {
         return new AdminStaffPage(
@@ -40,6 +44,7 @@ public class AdminStaffService {
         );
     }
 
+    /** Creates a new admin user (super admin only). */
     @Transactional
     public AdminAccountResponse create(Long actorId, CreateAdminRequest request) {
         requireSuperAdmin(actorId);
@@ -65,6 +70,7 @@ public class AdminStaffService {
         return AdminAccountResponse.from(admin, false);
     }
 
+    /** Deletes a non-super admin account (super admin only). */
     @Transactional
     public void delete(Long actorId, Long adminId) {
         requireSuperAdmin(actorId);

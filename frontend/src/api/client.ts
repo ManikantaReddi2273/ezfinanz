@@ -1,3 +1,9 @@
+/**
+ * Typed HTTP client for the EZFINANZ backend: auth token helpers, `api`/`apiForm`,
+ * and domain API groups (`authApi`, `kycApi`, `eligibilityApi`, `emiApi`, `bankApi`,
+ * `declarationApi`, `selfieApi`, `customerApi`, `supportApi`, `adminApi`).
+ */
+
 export type Role = "CUSTOMER" | "ADMIN";
 
 export type User = {
@@ -29,6 +35,7 @@ export type AuthResponse = {
   user: User;
 };
 
+/** Backend error with machine-readable `code` and HTTP `status`. */
 export class ApiError extends Error {
   code: string;
   status: number;
@@ -43,18 +50,22 @@ export class ApiError extends Error {
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 const TOKEN_KEY = "ezfinanz_token";
 
+/** Reads the JWT from localStorage, if any. */
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+/** Persists the JWT for subsequent authenticated requests. */
 export function storeToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
+/** Clears the stored JWT (logout / invalid session). */
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/** JSON fetch helper: attaches Bearer token and throws {@link ApiError} on failure. */
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getStoredToken();
   const headers = new Headers(options.headers);
@@ -82,6 +93,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   return data as T;
 }
 
+/** Signup, login, OTP, profile, and contact-verification endpoints. */
 export const authApi = {
   signupEmail: (body: { email: string; password: string; fullName?: string }) =>
     api<{ message: string }>("/api/auth/signup/email", {
@@ -165,6 +177,7 @@ export type KycProfile = {
   submittedAt: string;
 };
 
+/** Multipart/form-data fetch helper (KYC docs, selfie, knowledge uploads). */
 export async function apiForm<T>(path: string, form: FormData, method = "POST"): Promise<T> {
   const token = getStoredToken();
   const headers = new Headers();
@@ -203,6 +216,7 @@ export type EligibilityAssessment = {
   assessedAt: string;
 };
 
+/** Loan eligibility assessment get/assess. */
 export const eligibilityApi = {
   get: () => api<EligibilityAssessment>("/api/eligibility"),
   assess: (body: {
@@ -242,6 +256,7 @@ export type EmiQuote = {
   selectedAt: string | null;
 };
 
+/** EMI quote, load, and save selected principal/tenure. */
 export const emiApi = {
   quote: (amount?: number, tenureMonths?: number) => {
     const params = new URLSearchParams();
@@ -271,6 +286,7 @@ export type BankAccount = {
   updatedAt: string;
 };
 
+/** Disbursement bank account get/save. */
 export const bankApi = {
   get: () => api<BankAccount>("/api/bank"),
   save: (body: {
@@ -291,6 +307,7 @@ export type DeclarationStatus = {
   acceptedAt: string | null;
 };
 
+/** Loan declaration status and accept. */
 export const declarationApi = {
   get: () => api<DeclarationStatus>("/api/declaration"),
   accept: () =>
@@ -300,6 +317,7 @@ export const declarationApi = {
     }),
 };
 
+/** KYC profile save and ID document download. */
 export const kycApi = {
   get: () => api<KycProfile>("/api/kyc"),
   save: (form: FormData) => apiForm<KycProfile>("/api/kyc", form, "POST"),
@@ -328,6 +346,7 @@ export type SelfieStatus = {
   applicationStageLabel: string;
 };
 
+/** Selfie draft, send-application, and photo blob. */
 export const selfieApi = {
   get: () => api<SelfieStatus>("/api/selfie"),
   confirmDraft: (photo: File) => {
@@ -361,6 +380,7 @@ export type CustomerDashboardData = {
   notices: DashboardNotice[];
 };
 
+/** Customer dashboard summary and notices. */
 export const customerApi = {
   dashboard: () => api<CustomerDashboardData>("/api/customer/dashboard"),
 };
@@ -372,6 +392,7 @@ export type SupportTicket = {
   createdAt: string;
 };
 
+/** Support tickets and AI chat assistant. */
 export const supportApi = {
   list: () => api<SupportTicket[]>("/api/support"),
   send: (subject: string, message: string) =>
@@ -423,6 +444,7 @@ export type AdminApplicationDetail = {
   selfie: SelfieStatus | null;
 };
 
+/** Admin applications, selfie review, disbursement, staff, and knowledge docs. */
 export const adminApi = {
   list: () => api<AdminApplicationSummary[]>("/api/admin/applications"),
   get: (userId: number) => api<AdminApplicationDetail>(`/api/admin/applications/${userId}`),

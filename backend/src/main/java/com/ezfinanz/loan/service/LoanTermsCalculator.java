@@ -21,6 +21,7 @@ public final class LoanTermsCalculator {
     private LoanTermsCalculator() {
     }
 
+    /** Annual interest percent offered for the given CIBIL credit band. */
     public static BigDecimal annualInterestPercent(CreditBand band) {
         return switch (band) {
             case EXCELLENT -> new BigDecimal("10.99");
@@ -30,6 +31,7 @@ public final class LoanTermsCalculator {
         };
     }
 
+    /** Builds a full quote: EMI schedule totals, upfront charges, net disbursement, and IRR. */
     public static Quote calculate(BigDecimal principal, int tenureMonths, CreditBand band) {
         BigDecimal amount = principal.setScale(2, RoundingMode.HALF_UP);
         BigDecimal annualPercent = annualInterestPercent(band);
@@ -99,6 +101,7 @@ public final class LoanTermsCalculator {
         return r;
     }
 
+    /** Immutable loan-terms breakdown produced by {@link #calculate}. */
     public record Quote(
             BigDecimal principal,
             int tenureMonths,

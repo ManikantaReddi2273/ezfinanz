@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API for accepting the loan application terms and declaration.
+ */
 @RestController
 @RequestMapping("/api/declaration")
 @SecurityRequirement(name = "bearerAuth")
@@ -26,12 +29,14 @@ public class DeclarationController {
         this.declarationService = declarationService;
     }
 
+    /** Returns whether the customer has accepted the current terms version. */
     @GetMapping
     @Operation(summary = "Get declaration status")
     public DeclarationResponse get(Authentication authentication) {
         return declarationService.get((Long) authentication.getPrincipal());
     }
 
+    /** Records acceptance of the loan declaration for the current terms version. */
     @PostMapping
     @Operation(summary = "Accept the loan declaration")
     public DeclarationResponse accept(Authentication authentication, @Valid @RequestBody DeclarationRequest request) {

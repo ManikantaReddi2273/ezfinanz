@@ -6,6 +6,9 @@ import com.ezfinanz.selfie.repo.SelfieRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+/**
+ * Prevents edits to application steps once the loan journey is submitted, approved, or disbursed.
+ */
 @Service
 public class ApplicationLockService {
 
@@ -15,6 +18,7 @@ public class ApplicationLockService {
         this.selfieRepository = selfieRepository;
     }
 
+    /** Throws if the customer's application is locked against further changes. */
     public void requireEditable(Long userId) {
         selfieRepository.findByUser_Id(userId).ifPresent(row -> {
             if (row.isDisbursed()

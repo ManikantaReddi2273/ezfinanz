@@ -1,3 +1,6 @@
+/**
+ * Loan application step model: definitions, lock/read-only rules, and progress helpers.
+ */
 import type { User } from "../api/client";
 import { isFullyVerified } from "../auth/paths";
 
@@ -20,6 +23,7 @@ export type LoanStep = {
   hint: string;
 };
 
+/** Ordered 8-step loan application definition shown in the customer UI. */
 export const LOAN_STEPS: LoanStep[] = [
   { id: "account", number: 1, label: "Sign Up & Login", hint: "Account created" },
   { id: "verify", number: 2, label: "Verify Email & Phone", hint: "Verify both contacts" },
@@ -31,20 +35,24 @@ export const LOAN_STEPS: LoanStep[] = [
   { id: "selfie", number: 8, label: "Selfie Verification", hint: "Admin review" },
 ];
 
+/** True when admin rejected the selfie / application. */
 export function isApplicationRejected(user: User): boolean {
   return user.selfieStatus === "REJECTED";
 }
 
+/** True once the application was sent and is pending, approved, or disbursed. */
 export function isApplicationSubmitted(user: User): boolean {
   return Boolean(
     user.disbursed || user.selfieStatus === "APPROVED" || user.selfieStatus === "PENDING",
   );
 }
 
+/** Selfie saved locally but application not yet sent for review. */
 export function isSelfieDraft(user: User): boolean {
   return user.selfieStatus === "DRAFT";
 }
 
+/** All prior steps done and selfie draft ready for “Send Application”. */
 export function isReadyToSend(user: User): boolean {
   return Boolean(
     isSelfieDraft(user) &&
@@ -55,6 +63,7 @@ export function isReadyToSend(user: User): boolean {
   );
 }
 
+/** Highest step index the user may open based on completed prerequisites. */
 export function maxReachableStepIndex(user: User): number {
   if (user.selfieSubmitted && user.selfieStatus !== "REJECTED") {
     return 7;
@@ -83,6 +92,7 @@ export function maxReachableStepIndex(user: User): number {
   return 0;
 }
 
+/** Whether navigation to `stepId` is allowed for the current user progress. */
 export function canNavigateToStep(user: User, stepId: StepId): boolean {
   if (stepId === "account") {
     return true;
@@ -94,6 +104,7 @@ export function canNavigateToStep(user: User, stepId: StepId): boolean {
   return idx >= 0 && idx <= maxReachableStepIndex(user);
 }
 
+/** Resolves complete / current / locked for a step given user flags. */
 export function stepStatus(user: User, stepId: StepId): StepStatus {
   const verified = isFullyVerified(user);
   const kycDone = Boolean(user.kycCompleted);
@@ -151,6 +162,7 @@ export function stepStatus(user: User, stepId: StepId): StepStatus {
   return "locked";
 }
 
+/** After submit (or for account), step forms should be view-only. */
 export function isStepReadOnly(user: User, stepId: StepId): boolean {
   if (isApplicationSubmitted(user)) {
     return true;
@@ -161,6 +173,7 @@ export function isStepReadOnly(user: User, stepId: StepId): boolean {
   return false;
 }
 
+/** First incomplete step to open when entering the apply flow. */
 export function defaultStep(user: User): StepId {
   if (!isFullyVerified(user)) {
     return "verify";
@@ -189,6 +202,7 @@ export function defaultStep(user: User): StepId {
   return "selfie";
 }
 
+/** Count of finished steps (account always counts as 1). */
 export function completedCount(user: User): number {
   let count = 1;
   if (isFullyVerified(user)) {
@@ -215,6 +229,7 @@ export function completedCount(user: User): number {
   return count;
 }
 
+/** User-facing reason a later step is still locked. */
 export function lockMessage(user: User): string {
   if (!isFullyVerified(user)) {
     return "Verify your email and phone before continuing.";

@@ -14,6 +14,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * A customer-submitted support ticket (Contact Support), separate from the RAG chatbot.
+ */
 @Entity
 @Table(name = "support_tickets")
 public class SupportTicket {

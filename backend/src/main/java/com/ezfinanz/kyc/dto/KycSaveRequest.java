@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+/** Multipart form payload for creating or updating a customer's KYC details. */
 public class KycSaveRequest {
 
     @NotBlank

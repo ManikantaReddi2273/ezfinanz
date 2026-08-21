@@ -8,6 +8,7 @@ import com.ezfinanz.kyc.dto.KycResponse;
 import com.ezfinanz.loan.dto.EmiQuoteResponse;
 import com.ezfinanz.selfie.dto.SelfieResponse;
 
+/** Full admin view of one customer's loan application across all journey steps. */
 public record AdminApplicationDetail(
         Long userId,
         String applicantName,

@@ -1,5 +1,10 @@
+/**
+ * Legacy/simple customer home shell (sign-out + verified contacts summary).
+ * Prefer CustomerDashboard for the full application flow.
+ */
 import { useAuth } from "../auth/AuthContext";
 
+/** Minimal customer landing after verification (placeholder for early flow). */
 export function CustomerHome() {
   const { user, logout } = useAuth();
 

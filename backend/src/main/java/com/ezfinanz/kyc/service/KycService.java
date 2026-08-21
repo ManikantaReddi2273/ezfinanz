@@ -20,6 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.Period;
 
+/**
+ * Persists and validates customer KYC profiles, including optional ID document storage.
+ * Editing KYC after later steps may cascade-invalidate downstream application data.
+ */
 @Service
 public class KycService {
 
@@ -43,6 +47,7 @@ public class KycService {
         this.applicationCascadeService = applicationCascadeService;
     }
 
+    /** Loads the KYC profile for the given customer, or throws if none exists. */
     @Transactional(readOnly = true)
     public KycResponse get(Long userId) {
         KycProfile profile = kycRepository.findByUser_Id(userId)
@@ -50,6 +55,10 @@ public class KycService {
         return KycResponse.from(profile);
     }
 
+    /**
+     * Creates or updates KYC for a verified customer while the application is still editable.
+     * Optionally stores an uploaded ID document and invalidates later steps on update.
+     */
     @Transactional
     public KycResponse save(
             Long userId,
@@ -106,6 +115,7 @@ public class KycService {
         return response;
     }
 
+    /** Returns the stored ID document as a downloadable resource. */
     @Transactional(readOnly = true)
     public Resource document(Long userId) {
         KycProfile profile = kycRepository.findByUser_Id(userId)

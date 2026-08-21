@@ -1,3 +1,6 @@
+/**
+ * Application step: accept loan declaration / terms checkboxes.
+ */
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, authApi, declarationApi, type DeclarationStatus } from "../api/client";
@@ -5,6 +8,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../auth/AuthContext";
 import { FlowCard, flowPrimary } from "./FlowCard";
 
+/** Declaration acceptance before selfie; confirms via dialog then POSTs accept. */
 export function DeclarationStep({ onContinue, readOnly }: { onContinue: () => void; readOnly?: boolean }) {
   const { updateUser } = useAuth();
   const [status, setStatus] = useState<DeclarationStatus | null>(null);

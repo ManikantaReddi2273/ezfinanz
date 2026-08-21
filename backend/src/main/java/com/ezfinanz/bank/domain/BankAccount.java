@@ -15,6 +15,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * Persisted bank account used to disburse the approved personal loan to the customer.
+ */
 @Entity
 @Table(name = "bank_accounts")
 public class BankAccount {

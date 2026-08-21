@@ -19,7 +19,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Stores application files in Supabase Storage (used for both local and production).
+ * Supabase Storage client for application files (KYC, selfies, knowledge docs).
+ * Despite the class name, objects are stored in Supabase buckets—not on the local disk.
  */
 @Service
 public class LocalFileStorage {
@@ -48,14 +49,17 @@ public class LocalFileStorage {
         }
     }
 
+    /** Uploads a customer KYC/ID document to Supabase Storage. */
     public StoredFile saveKycDocument(Long userId, MultipartFile file) {
         return save(userId, "kyc", file, Set.of("jpg", "jpeg", "png", "webp", "pdf"), "ID document");
     }
 
+    /** Uploads a customer selfie image to Supabase Storage. */
     public StoredFile saveSelfie(Long userId, MultipartFile file) {
         return save(userId, "selfie", file, Set.of("jpg", "jpeg", "png", "webp"), "Selfie");
     }
 
+    /** Uploads a RAG knowledge-base document (.txt/.md/.pdf) to Supabase Storage. */
     public StoredFile saveKnowledgeDoc(Long documentId, MultipartFile file) {
         return save(documentId, "knowledge", file, Set.of("txt", "md", "pdf"), "Knowledge document");
     }
@@ -102,6 +106,7 @@ public class LocalFileStorage {
         }
     }
 
+    /** Writes raw bytes to an object path in the configured Supabase bucket. */
     public void upload(String relativePath, byte[] bytes, String contentType) {
         requireConfigured();
         try {
@@ -123,6 +128,7 @@ public class LocalFileStorage {
         }
     }
 
+    /** Downloads object bytes from Supabase Storage by relative path. */
     public byte[] readBytes(String relativePath) {
         requireConfigured();
         try {
@@ -146,6 +152,7 @@ public class LocalFileStorage {
         }
     }
 
+    /** Returns the object as a Spring {@link Resource} suitable for download responses. */
     public Resource asResource(String relativePath, String filename) {
         byte[] bytes = readBytes(relativePath);
         String name = filename == null || filename.isBlank() ? relativePath : filename;
@@ -157,6 +164,7 @@ public class LocalFileStorage {
         };
     }
 
+    /** Returns true if the object exists and can be read from Supabase Storage. */
     public boolean exists(String relativePath) {
         if (!configured || relativePath == null || relativePath.isBlank()) {
             return false;
@@ -169,6 +177,7 @@ public class LocalFileStorage {
         }
     }
 
+    /** Best-effort delete of an object in Supabase Storage (ignores failures). */
     public void delete(String relativePath) {
         if (!configured || relativePath == null || relativePath.isBlank()) {
             return;
@@ -232,6 +241,7 @@ public class LocalFileStorage {
         return filename.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
+    /** Result of a successful upload: bucket-relative path and original filename. */
     public record StoredFile(String relativePath, String originalName) {
     }
 }

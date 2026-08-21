@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+/**
+ * Sends and verifies phone OTPs via Twilio Verify for customer contact verification.
+ */
 @Component
 public class TwilioSmsService {
 
@@ -33,6 +36,7 @@ public class TwilioSmsService {
         this.verifyServiceSid = verifyServiceSid == null ? "" : verifyServiceSid.trim();
     }
 
+    /** Starts a Twilio Verify SMS OTP to the given phone number. */
     public void sendOtp(String phone) {
         ensureConfigured();
         try {
@@ -53,6 +57,7 @@ public class TwilioSmsService {
         }
     }
 
+    /** Checks a phone OTP with Twilio Verify; throws if invalid or expired. */
     public void checkOtp(String phone, String code) {
         ensureConfigured();
         try {

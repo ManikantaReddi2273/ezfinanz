@@ -27,6 +27,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Builds the customer dashboard: stage badge, eligibility/EMI summary, document flags, and notices.
+ */
 @Service
 public class CustomerDashboardService {
 
@@ -56,6 +59,7 @@ public class CustomerDashboardService {
         this.selfieRepository = selfieRepository;
     }
 
+    /** Aggregates application progress into a single dashboard response for the customer. */
     @Transactional(readOnly = true)
     public CustomerDashboardResponse load(Long userId) {
         User user = userRepository.findById(userId)

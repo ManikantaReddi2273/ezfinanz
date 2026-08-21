@@ -15,6 +15,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * Persisted record that the customer accepted the loan application terms for a given version.
+ */
 @Entity
 @Table(name = "loan_declarations")
 public class LoanDeclaration {

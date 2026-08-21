@@ -19,6 +19,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Spring Security setup: stateless JWT auth, CORS, public auth/Swagger routes,
+ * and ADMIN-only access to {@code /api/admin/**}.
+ */
 @Configuration
 public class SecurityConfig {
 
@@ -33,11 +37,16 @@ public class SecurityConfig {
         this.allowedOrigins = allowedOrigins;
     }
 
+    /** BCrypt encoder for password hashes and OTP code hashes. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Disables servlet-container auto-registration of {@link JwtAuthFilter}
+     * so it only runs inside the security filter chain (avoids double execution).
+     */
     @Bean
     public FilterRegistrationBean<JwtAuthFilter> jwtFilterRegistration(JwtAuthFilter filter) {
         FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(filter);
@@ -45,6 +54,7 @@ public class SecurityConfig {
         return registration;
     }
 
+    /** Defines which endpoints are public vs authenticated vs admin-only. */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -83,6 +93,7 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /** CORS policy driven by {@code app.cors.allowed-origins} (comma-separated). */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

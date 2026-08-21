@@ -1,6 +1,10 @@
+/**
+ * Two-column shell for login/signup: branding panel + form card.
+ */
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+/** Auth page layout with marketing aside (desktop) and centered form (mobile + main). */
 export function AuthLayout({
   title,
   subtitle,

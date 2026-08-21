@@ -21,6 +21,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Super-admin REST API for managing RAG knowledge-base documents used by the support chatbot.
+ */
 @RestController
 @RequestMapping("/api/admin/knowledge/documents")
 @SecurityRequirement(name = "bearerAuth")
@@ -33,12 +36,14 @@ public class KnowledgeAdminController {
         this.knowledgeAdminService = knowledgeAdminService;
     }
 
+    /** Lists indexed (and pending/failed) knowledge documents. */
     @GetMapping
     @Operation(summary = "List knowledge documents")
     public List<KnowledgeDocumentResponse> list(Authentication authentication) {
         return knowledgeAdminService.list((Long) authentication.getPrincipal());
     }
 
+    /** Uploads a document to storage and indexes it into Pinecone for RAG. */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Upload and index a knowledge document")
@@ -50,6 +55,7 @@ public class KnowledgeAdminController {
         return knowledgeAdminService.upload((Long) authentication.getPrincipal(), file, title);
     }
 
+    /** Deletes a knowledge document, its Supabase file, and its Pinecone vectors. */
     @DeleteMapping("/{documentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a knowledge document and its vectors")

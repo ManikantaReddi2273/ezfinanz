@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API for the super admin to list, create, and delete staff admin accounts.
+ */
 @RestController
 @RequestMapping("/api/admin/admins")
 @SecurityRequirement(name = "bearerAuth")
@@ -31,12 +34,14 @@ public class AdminStaffController {
         this.adminStaffService = adminStaffService;
     }
 
+    /** Lists admin accounts and whether the caller may create more admins. */
     @GetMapping
     @Operation(summary = "List admin accounts")
     public AdminStaffPage list(Authentication authentication) {
         return adminStaffService.page((Long) authentication.getPrincipal());
     }
 
+    /** Creates a new admin login (super admin only). */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new admin (super admin only)")
@@ -44,6 +49,7 @@ public class AdminStaffController {
         return adminStaffService.create((Long) authentication.getPrincipal(), request);
     }
 
+    /** Deletes an admin account (super admin only; cannot delete self or super admin). */
     @DeleteMapping("/{adminId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete an admin (super admin only)")

@@ -1,3 +1,6 @@
+/**
+ * Site-wide footer for landing and in-app (dashboard) variants.
+ */
 import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
 
@@ -5,6 +8,7 @@ type SiteFooterProps = {
   variant?: "landing" | "dashboard";
 };
 
+/** Brand, links, and contact footer; `landing` adds marketing CTAs. */
 export function SiteFooter({ variant = "landing" }: SiteFooterProps) {
   const year = new Date().getFullYear();
   const isLanding = variant === "landing";

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
+/** Request body for submitting financial details used in eligibility assessment. */
 public class EligibilityRequest {
 
     @NotNull

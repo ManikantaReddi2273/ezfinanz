@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Customer support REST API: human support tickets and the RAG-backed chatbot.
+ */
 @RestController
 @RequestMapping("/api/support")
 @SecurityRequirement(name = "bearerAuth")
@@ -35,12 +38,14 @@ public class SupportController {
         this.supportChatService = supportChatService;
     }
 
+    /** Lists the authenticated customer's support tickets (Contact Support history). */
     @GetMapping
     @Operation(summary = "List this customer's support messages")
     public List<SupportTicketResponse> list(Authentication authentication) {
         return supportService.list((Long) authentication.getPrincipal());
     }
 
+    /** Creates a support ticket and notifies the support inbox by email. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Send a support message")
@@ -48,6 +53,7 @@ public class SupportController {
         return supportService.create((Long) authentication.getPrincipal(), request);
     }
 
+    /** Asks the RAG support chatbot (Pinecone retrieval + OpenAI reply). */
     @PostMapping("/chat")
     @Operation(summary = "Ask the EZFINANZ support chatbot (RAG)")
     public SupportChatResponse chat(Authentication authentication, @Valid @RequestBody SupportChatRequest request) {

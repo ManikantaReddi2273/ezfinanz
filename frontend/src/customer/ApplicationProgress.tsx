@@ -1,7 +1,11 @@
+/**
+ * Horizontal 8-step progress tracker; clicks open reachable steps via `onSelect`.
+ */
 import { Check } from "lucide-react";
 import type { User } from "../api/client";
 import { LOAN_STEPS, stepStatus, type StepId } from "./steps";
 
+/** Visual application progress bar used on home and apply views. */
 export function ApplicationProgress({
   user,
   onSelect,

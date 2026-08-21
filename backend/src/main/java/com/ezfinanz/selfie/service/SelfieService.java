@@ -23,6 +23,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 
+/**
+ * Handles live selfie drafts and final application submission for admin review.
+ * Ensures prior application steps are complete before sending.
+ */
 @Service
 public class SelfieService {
 
@@ -58,6 +62,7 @@ public class SelfieService {
         this.applicationStatusService = applicationStatusService;
     }
 
+    /** Returns the customer's selfie submission and current application stage. */
     @Transactional(readOnly = true)
     public SelfieResponse get(Long userId) {
         User user = requireUser(userId);
@@ -66,6 +71,7 @@ public class SelfieService {
         return SelfieResponse.from(row, applicationStatusService.snapshot(user).stage());
     }
 
+    /** Stores a selfie photo as a draft (not yet pending admin review). */
     @Transactional
     public SelfieResponse confirmDraft(Long userId, MultipartFile photo) {
         User user = requireUser(userId);
@@ -104,6 +110,7 @@ public class SelfieService {
         return SelfieResponse.from(row, applicationStatusService.snapshot(user).stage());
     }
 
+    /** Moves a draft selfie to PENDING and locks the application for admin review. */
     @Transactional
     public SelfieResponse sendApplication(Long userId) {
         User user = requireUser(userId);
@@ -125,6 +132,7 @@ public class SelfieService {
         return SelfieResponse.from(row, applicationStatusService.snapshot(user).stage());
     }
 
+    /** Returns the stored selfie image as a downloadable resource. */
     @Transactional(readOnly = true)
     public Resource photo(Long userId) {
         SelfieSubmission row = selfieRepository.findByUser_Id(userId)

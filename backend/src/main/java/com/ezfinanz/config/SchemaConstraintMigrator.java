@@ -22,6 +22,7 @@ public class SchemaConstraintMigrator implements ApplicationRunner {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /** Refreshes the selfie review_status CHECK so DRAFT is allowed. */
     @Override
     public void run(ApplicationArguments args) {
         try {

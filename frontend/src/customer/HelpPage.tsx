@@ -1,3 +1,6 @@
+/**
+ * Help & Support page: FAQs plus support ticket list/create.
+ */
 import { ChevronRight, CircleHelp, Headphones, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, supportApi, type SupportTicket } from "../api/client";
@@ -39,6 +42,7 @@ const FAQS = [
   },
 ];
 
+/** FAQ accordion and ticket form; optional `onContact` opens the chat widget. */
 export function HelpPage({ onContact }: { onContact?: () => void }) {
   const [subject, setSubject] = useState("Application help");
   const [message, setMessage] = useState("");

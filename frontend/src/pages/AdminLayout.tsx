@@ -1,3 +1,7 @@
+/**
+ * Shared admin chrome: sidebar nav, header, logout confirm.
+ * Also exports application ID formatting and stage badge colors.
+ */
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
@@ -14,6 +18,7 @@ import { NavLink } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../auth/AuthContext";
 
+/** Admin shell with responsive sidebar and page title header. */
 export function AdminLayout({
   title,
   headerRight,
@@ -112,10 +117,12 @@ function AdminLink({
   );
 }
 
+/** Formats a numeric user id as a display application id (e.g. EZF000000001). */
 export function applicationId(userId: number): string {
   return `EZF${String(userId).padStart(9, "0")}`;
 }
 
+/** Tailwind classes for application-stage status badges. */
 export function stageBadgeClass(stage: string): string {
   if (stage === "DISBURSED" || stage === "READY_FOR_DISBURSEMENT") {
     return "bg-emerald-50 text-emerald-700";

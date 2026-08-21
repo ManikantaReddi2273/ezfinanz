@@ -1,5 +1,9 @@
+/**
+ * Link that starts Google OAuth via the backend redirect URL.
+ */
 import { googleSignInUrl } from "../auth/google";
 
+/** Full-width “Continue with Google” button linking to OAuth start. */
 export function GoogleSignInButton() {
   return (
     <a

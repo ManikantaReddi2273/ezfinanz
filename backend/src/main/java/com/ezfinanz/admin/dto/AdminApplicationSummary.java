@@ -5,6 +5,7 @@ import com.ezfinanz.application.ApplicationStage;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/** Compact admin list row summarizing a customer's application progress. */
 public record AdminApplicationSummary(
         Long userId,
         String applicantName,

@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * REST API for live selfie capture, draft confirmation, and final application submission.
+ */
 @RestController
 @RequestMapping("/api/selfie")
 @SecurityRequirement(name = "bearerAuth")
@@ -29,12 +32,14 @@ public class SelfieController {
         this.selfieService = selfieService;
     }
 
+    /** Returns selfie review status and related application stage. */
     @GetMapping
     @Operation(summary = "Get selfie review status")
     public SelfieResponse get(Authentication authentication) {
         return selfieService.get((Long) authentication.getPrincipal());
     }
 
+    /** Saves a live selfie as a draft before the application is sent for review. */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Confirm a live selfie draft (before sending the application)")
     public SelfieResponse confirmDraft(
@@ -44,12 +49,14 @@ public class SelfieController {
         return selfieService.confirmDraft((Long) authentication.getPrincipal(), photo);
     }
 
+    /** Submits the completed application (with draft selfie) for admin review. */
     @PostMapping("/send-application")
     @Operation(summary = "Send the completed application for admin review")
     public SelfieResponse sendApplication(Authentication authentication) {
         return selfieService.sendApplication((Long) authentication.getPrincipal());
     }
 
+    /** Streams the customer's submitted selfie image. */
     @GetMapping("/photo")
     @Operation(summary = "View the submitted selfie")
     public ResponseEntity<Resource> photo(Authentication authentication) {

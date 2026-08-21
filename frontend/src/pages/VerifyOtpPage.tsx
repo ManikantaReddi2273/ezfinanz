@@ -1,3 +1,7 @@
+/**
+ * OTP entry for email/phone verification after signup or phone login.
+ * Expects `location.state` with `{ channel, target, reason? }`.
+ */
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -14,6 +18,7 @@ type OtpState = {
 
 type OtpForm = { otp: string };
 
+/** Verifies OTP and establishes session; missing state redirects to login. */
 export function VerifyOtpPage() {
   const location = useLocation();
   const navigate = useNavigate();

@@ -24,6 +24,11 @@ public final class EligibilityCalculator {
     private EligibilityCalculator() {
     }
 
+    /**
+     * Evaluates whether the customer can borrow the requested amount under product rules.
+     *
+     * @return outcome with incomes, DTI, credit band, max offer, result, and human-readable reasons
+     */
     public static Outcome evaluate(
             IncomeType incomeType,
             BigDecimal incomeAmount,
@@ -134,6 +139,7 @@ public final class EligibilityCalculator {
         return amount.divideToIntegralValue(THOUSAND).multiply(THOUSAND).setScale(2, RoundingMode.HALF_UP);
     }
 
+    /** Calculated eligibility fields returned by {@link #evaluate}. */
     public record Outcome(
             BigDecimal monthlyIncome,
             BigDecimal annualIncome,

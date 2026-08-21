@@ -1,5 +1,6 @@
 package com.ezfinanz.admin.dto;
 
+/** Optional rejection reason when an admin rejects a selfie. */
 public class SelfieRejectRequest {
 
     private String reason;

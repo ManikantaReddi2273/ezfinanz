@@ -1,9 +1,13 @@
+/**
+ * Standalone email/phone verification page for customers who are not fully verified.
+ */
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { ApiError, authApi } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { isFullyVerified } from "../auth/paths";
 
+/** Step-2 contact verification UI; redirects when already verified or admin. */
 export function VerifyContactsPage() {
   const { user, logout } = useAuth();
 

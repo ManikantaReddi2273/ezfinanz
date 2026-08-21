@@ -33,6 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Admin-facing operations to inspect customer applications, review selfies, and confirm disbursement.
+ */
 @Service
 public class AdminApplicationService {
 
@@ -74,6 +77,7 @@ public class AdminApplicationService {
         this.emailOtpService = emailOtpService;
     }
 
+    /** Lists all customer applications as admin summaries. */
     @Transactional(readOnly = true)
     public List<AdminApplicationSummary> list() {
         return userRepository.findByRoleOrderByCreatedAtDesc(Role.CUSTOMER).stream()
@@ -81,6 +85,7 @@ public class AdminApplicationService {
                 .toList();
     }
 
+    /** Loads the full application journey for one customer. */
     @Transactional(readOnly = true)
     public AdminApplicationDetail get(Long userId) {
         User user = requireCustomer(userId);
@@ -118,6 +123,7 @@ public class AdminApplicationService {
         );
     }
 
+    /** Approves a pending selfie and emails the applicant an approval update. */
     @Transactional
     public AdminApplicationDetail approveSelfie(Long adminId, Long userId, String message) {
         User user = requireCustomer(userId);
@@ -137,6 +143,7 @@ public class AdminApplicationService {
         return get(userId);
     }
 
+    /** Rejects a pending selfie with an optional reason and emails the applicant. */
     @Transactional
     public AdminApplicationDetail rejectSelfie(Long adminId, Long userId, String reason) {
         User user = requireCustomer(userId);
@@ -157,6 +164,7 @@ public class AdminApplicationService {
         return get(userId);
     }
 
+    /** Marks an approved application as disbursed by the acting admin. */
     @Transactional
     public AdminApplicationDetail disburse(Long adminId, Long userId) {
         SelfieSubmission row = selfieRepository.findByUser_Id(userId)
@@ -174,12 +182,14 @@ public class AdminApplicationService {
         return get(userId);
     }
 
+    /** Returns the customer's KYC ID document for admin viewing. */
     @Transactional(readOnly = true)
     public Resource kycDocument(Long userId) {
         requireCustomer(userId);
         return kycService.document(userId);
     }
 
+    /** Returns the customer's selfie photo for admin viewing. */
     @Transactional(readOnly = true)
     public Resource selfiePhoto(Long userId) {
         requireCustomer(userId);

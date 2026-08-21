@@ -13,6 +13,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * Persisted account for customers and admins (email and/or phone, verification flags, role).
+ */
 @Entity
 @Table(name = "users")
 public class User {
@@ -129,6 +132,7 @@ public class User {
         return updatedAt;
     }
 
+    /** True when both email and phone have been verified (required to proceed in the loan flow). */
     public boolean isFullyVerified() {
         return emailVerified && phoneVerified;
     }

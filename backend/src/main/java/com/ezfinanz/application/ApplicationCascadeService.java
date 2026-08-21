@@ -11,6 +11,9 @@ import com.ezfinanz.selfie.repo.SelfieRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * When an earlier application step is edited, clears dependent later-step data so the journey stays consistent.
+ */
 @Service
 public class ApplicationCascadeService {
 
@@ -37,30 +40,35 @@ public class ApplicationCascadeService {
         this.fileStorage = fileStorage;
     }
 
+    /** Clears eligibility and all downstream steps after KYC is updated. */
     @Transactional
     public void invalidateAfterKyc(Long userId) {
         eligibilityRepository.findByUser_Id(userId).ifPresent(eligibilityRepository::delete);
         invalidateAfterEligibility(userId);
     }
 
+    /** Clears EMI and all downstream steps after eligibility is updated. */
     @Transactional
     public void invalidateAfterEligibility(Long userId) {
         emiRepository.findByUser_Id(userId).ifPresent(emiRepository::delete);
         invalidateAfterEmi(userId);
     }
 
+    /** Clears bank account and all downstream steps after EMI is updated. */
     @Transactional
     public void invalidateAfterEmi(Long userId) {
         bankAccountRepository.findByUser_Id(userId).ifPresent(bankAccountRepository::delete);
         invalidateAfterBank(userId);
     }
 
+    /** Clears declaration and draft selfie after bank details are updated. */
     @Transactional
     public void invalidateAfterBank(Long userId) {
         declarationRepository.findByUser_Id(userId).ifPresent(declarationRepository::delete);
         invalidateAfterDeclaration(userId);
     }
 
+    /** Clears a draft/rejected selfie after declaration is re-accepted. */
     @Transactional
     public void invalidateAfterDeclaration(Long userId) {
         clearDraftSelfie(userId);

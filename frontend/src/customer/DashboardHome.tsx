@@ -1,3 +1,6 @@
+/**
+ * Customer home overview: status, next step CTA, notices summary, and progress.
+ */
 import { ChevronRight, CircleHelp, Headphones, Waypoints } from "lucide-react";
 import { useEffect, useState } from "react";
 import { customerApi, type CustomerDashboardData, type User } from "../api/client";
@@ -5,6 +8,7 @@ import { formatDateTime, rupee } from "../lib/money";
 import { ApplicationProgress } from "./ApplicationProgress";
 import { completedCount, defaultStep, LOAN_STEPS, isApplicationSubmitted, isReadyToSend, type StepId } from "./steps";
 
+/** Dashboard landing content for the signed-in customer. */
 export function DashboardHome({
   user,
   onOpenStep,

@@ -11,6 +11,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
+/**
+ * Issues and parses HMAC-signed JWT access tokens used for API authentication.
+ */
 @Service
 public class JwtService {
 
@@ -29,6 +32,7 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
+    /** Creates a signed JWT with the user id as subject and role claim. */
     public String createToken(Long userId, String role) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -40,6 +44,7 @@ public class JwtService {
                 .compact();
     }
 
+    /** Verifies the signature/expiry and returns the token claims. */
     public Claims parse(String token) {
         return Jwts.parser()
                 .verifyWith(key)

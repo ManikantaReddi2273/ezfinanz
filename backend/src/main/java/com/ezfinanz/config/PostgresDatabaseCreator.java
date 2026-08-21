@@ -23,6 +23,10 @@ public final class PostgresDatabaseCreator {
     private PostgresDatabaseCreator() {
     }
 
+    /**
+     * Ensures the {@code ezfinanz} database exists on local Postgres.
+     * Skips managed hosts (Neon, Supabase, AWS, Render) and non-target database names.
+     */
     public static void ensureDatabaseExists() {
         String appUrl = firstNonBlank(
                 envOrProp("SPRING_DATASOURCE_URL"),

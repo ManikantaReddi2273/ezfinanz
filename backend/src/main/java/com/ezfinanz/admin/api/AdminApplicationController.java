@@ -1,5 +1,6 @@
 package com.ezfinanz.admin.api;
 
+
 import com.ezfinanz.admin.dto.AdminApplicationDetail;
 import com.ezfinanz.admin.dto.AdminApplicationSummary;
 import com.ezfinanz.admin.dto.ApplicationReviewRequest;
@@ -22,6 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * REST API for admins to list, review, approve/reject selfies, and disburse loans.
+ */
 @RestController
 @RequestMapping("/api/admin/applications")
 @SecurityRequirement(name = "bearerAuth")
@@ -34,18 +38,21 @@ public class AdminApplicationController {
         this.adminApplicationService = adminApplicationService;
     }
 
+    /** Lists all customer applications with high-level status summaries. */
     @GetMapping
     @Operation(summary = "List all customer applications")
     public List<AdminApplicationSummary> list() {
         return adminApplicationService.list();
     }
 
+    /** Returns the full multi-step application detail for one customer. */
     @GetMapping("/{userId}")
     @Operation(summary = "View full application journey")
     public AdminApplicationDetail get(@PathVariable Long userId) {
         return adminApplicationService.get(userId);
     }
 
+    /** Approves a pending selfie and optionally notifies the applicant. */
     @PostMapping("/{userId}/selfie/approve")
     @Operation(summary = "Approve the live selfie")
     public AdminApplicationDetail approve(
@@ -57,6 +64,7 @@ public class AdminApplicationController {
         return adminApplicationService.approveSelfie((Long) authentication.getPrincipal(), userId, message);
     }
 
+    /** Rejects a pending selfie with an optional reason emailed to the applicant. */
     @PostMapping("/{userId}/selfie/reject")
     @Operation(summary = "Reject the live selfie")
     public AdminApplicationDetail reject(
@@ -68,12 +76,14 @@ public class AdminApplicationController {
         return adminApplicationService.rejectSelfie((Long) authentication.getPrincipal(), userId, reason);
     }
 
+    /** Marks an approved application as disbursed. */
     @PostMapping("/{userId}/disburse")
     @Operation(summary = "Confirm loan disbursement")
     public AdminApplicationDetail disburse(Authentication authentication, @PathVariable Long userId) {
         return adminApplicationService.disburse((Long) authentication.getPrincipal(), userId);
     }
 
+    /** Streams the customer's KYC ID document for admin review. */
     @GetMapping("/{userId}/kyc-document")
     @Operation(summary = "View KYC ID document")
     public ResponseEntity<Resource> kycDocument(@PathVariable Long userId) {
@@ -83,6 +93,7 @@ public class AdminApplicationController {
                 .body(resource);
     }
 
+    /** Streams the customer's submitted selfie for admin review. */
     @GetMapping("/{userId}/selfie")
     @Operation(summary = "View submitted selfie")
     public ResponseEntity<Resource> selfie(@PathVariable Long userId) {

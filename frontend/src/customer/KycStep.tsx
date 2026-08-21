@@ -1,3 +1,6 @@
+/**
+ * Application step: capture KYC identity, address, and optional ID document.
+ */
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError, authApi, kycApi, type Gender, type IdType, type KycProfile } from "../api/client";
@@ -17,6 +20,7 @@ type KycForm = {
   idNumber: string;
 };
 
+/** KYC form step; `readOnly` shows saved profile without edits. */
 export function KycStep({ onContinue, readOnly }: { onContinue?: () => void; readOnly?: boolean }) {
   const { user, updateUser } = useAuth();
   const [existing, setExisting] = useState<KycProfile | null>(null);

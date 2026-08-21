@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+/** API view of an eligibility assessment, including DTI percent and reason list. */
 public record EligibilityResponse(
         IncomeType incomeType,
         BigDecimal incomeAmount,
@@ -29,6 +30,7 @@ public record EligibilityResponse(
         List<String> reasons,
         Instant assessedAt
 ) {
+    /** Maps a persisted assessment to the API response shape. */
     public static EligibilityResponse from(EligibilityAssessment row) {
         BigDecimal dtiPercent = row.getDtiRatio().multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP);
         List<String> reasons = row.getReasons() == null || row.getReasons().isBlank()

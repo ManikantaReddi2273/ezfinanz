@@ -11,9 +11,13 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
+/**
+ * Provides a Google ID-token verifier bound to the app's OAuth client id.
+ */
 @Configuration
 public class GoogleAuthConfig {
 
+    /** Verifier used by Google sign-in (ID token and OAuth callback flows). */
     @Bean
     public GoogleIdTokenVerifier googleIdTokenVerifier(
             @Value("${app.google.client-id}") String clientId

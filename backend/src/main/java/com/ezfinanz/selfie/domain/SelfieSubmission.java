@@ -17,6 +17,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * Persisted live selfie for a customer application, including review and disbursement state.
+ */
 @Entity
 @Table(name = "selfie_submissions")
 public class SelfieSubmission {

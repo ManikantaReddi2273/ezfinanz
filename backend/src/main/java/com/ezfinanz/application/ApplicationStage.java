@@ -1,5 +1,8 @@
 package com.ezfinanz.application;
 
+/**
+ * Ordered stages of the customer loan application journey, from contact verification through disbursement.
+ */
 public enum ApplicationStage {
     CONTACTS_PENDING("Contacts pending"),
     KYC("KYC"),
@@ -21,6 +24,7 @@ public enum ApplicationStage {
         this.label = label;
     }
 
+    /** Human-readable label for UI and notifications. */
     public String getLabel() {
         return label;
     }

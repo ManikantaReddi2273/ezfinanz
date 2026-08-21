@@ -1,3 +1,6 @@
+/**
+ * Customer app shell: sidebar nav, application steps, profile/docs/help, support chat.
+ */
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
@@ -32,6 +35,7 @@ import { VerificationStep } from "./VerificationStep";
 
 type Page = "home" | "apply" | "profile" | "documents" | "help";
 
+/** Main authenticated customer experience with step wizard and secondary pages. */
 export function CustomerDashboard() {
   const { user, logout } = useAuth();
   const [page, setPage] = useState<Page>("home");

@@ -1,3 +1,6 @@
+/**
+ * Application step: live selfie capture, draft confirm, and send application.
+ */
 import { useEffect, useRef, useState } from "react";
 import { ApiError, authApi, selfieApi, type SelfieStatus } from "../api/client";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -8,6 +11,7 @@ import { isApplicationRejected, isReadyToSend } from "./steps";
 
 type PendingAction = "confirm" | "send" | null;
 
+/** Camera selfie flow plus final submit for admin review. */
 export function SelfieStep({ readOnly }: { readOnly?: boolean }) {
   const { user, updateUser } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);

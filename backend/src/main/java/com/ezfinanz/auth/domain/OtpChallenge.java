@@ -12,6 +12,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * Stored email OTP challenge: hashed code, target address, purpose, expiry, and consumption.
+ */
 @Entity
 @Table(name = "otp_challenges")
 public class OtpChallenge {
@@ -103,10 +106,12 @@ public class OtpChallenge {
         return createdAt;
     }
 
+    /** Whether the challenge is past {@link #expiresAt}. */
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
     }
 
+    /** Whether the code has already been used ({@code consumedAt} set). */
     public boolean isConsumed() {
         return consumedAt != null;
     }

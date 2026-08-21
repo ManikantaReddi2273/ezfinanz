@@ -1,3 +1,6 @@
+/**
+ * Email signup page; on success navigates to OTP verification.
+ */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -12,6 +15,7 @@ type SignupForm = {
   confirmPassword: string;
 };
 
+/** Creates an email account then sends the user to verify-OTP. */
 export function SignupPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);

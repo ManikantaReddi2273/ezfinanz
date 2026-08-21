@@ -7,9 +7,13 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Swagger / OpenAPI metadata for the EZFINANZ API, including Bearer JWT security.
+ */
 @Configuration
 public class OpenApiConfig {
 
+    /** Builds the OpenAPI document shown in Swagger UI. */
     @Bean
     public OpenAPI ezfinanzOpenAPI() {
         return new OpenAPI()

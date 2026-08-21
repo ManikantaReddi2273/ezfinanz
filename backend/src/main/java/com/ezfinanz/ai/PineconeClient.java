@@ -13,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * HTTP client for the Pinecone vector index used by RAG.
+ * Stores knowledge-document chunk embeddings and retrieves nearest matches for the support chatbot.
+ */
 @Component
 public class PineconeClient {
 
@@ -34,10 +38,12 @@ public class PineconeClient {
                 : RestClient.builder().baseUrl(this.indexHost).build();
     }
 
+    /** Returns true when API key and index host are both configured. */
     public boolean isConfigured() {
         return !apiKey.isBlank() && !indexHost.isBlank() && restClient != null;
     }
 
+    /** Throws if Pinecone is not configured so RAG/indexing fail with a clear API error. */
     public void requireConfigured() {
         if (!isConfigured()) {
             throw new ApiException(
@@ -48,10 +54,12 @@ public class PineconeClient {
         }
     }
 
+    /** Namespace used for support/RAG vectors (defaults to {@code ezfinanz-support}). */
     public String namespace() {
         return namespace;
     }
 
+    /** Upserts embedding vectors (typically document chunks) into the RAG index namespace. */
     public void upsert(List<VectorRecord> vectors) {
         requireConfigured();
         if (vectors == null || vectors.isEmpty()) {
@@ -85,6 +93,9 @@ public class PineconeClient {
         }
     }
 
+    /**
+     * Finds the top-K nearest vectors for a query embedding (RAG retrieval for the chatbot).
+     */
     @SuppressWarnings("unchecked")
     public List<Match> query(float[] values, int topK) {
         requireConfigured();
@@ -126,6 +137,7 @@ public class PineconeClient {
         }
     }
 
+    /** Deletes all vectors tagged with the given knowledge-document id from the RAG index. */
     public void deleteByDocumentId(long documentId) {
         requireConfigured();
         try {
@@ -187,9 +199,11 @@ public class PineconeClient {
         return value.length() > 240 ? value.substring(0, 240) + "…" : value;
     }
 
+    /** One vector to upsert: id, embedding values, and metadata (document id, title, chunk text). */
     public record VectorRecord(String id, float[] values, Map<String, Object> metadata) {
     }
 
+    /** A similarity match returned by {@link #query(float[], int)}. */
     public record Match(String id, double score, Map<String, Object> metadata) {
     }
 }

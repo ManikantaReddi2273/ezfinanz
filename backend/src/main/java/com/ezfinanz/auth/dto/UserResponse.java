@@ -4,6 +4,9 @@ import com.ezfinanz.application.ApplicationStatusService;
 import com.ezfinanz.auth.domain.Role;
 import com.ezfinanz.auth.domain.User;
 
+/**
+ * User profile returned to the client, including loan-application progress flags and stage.
+ */
 public record UserResponse(
         Long id,
         String fullName,
@@ -26,6 +29,7 @@ public record UserResponse(
         String applicationStage,
         String applicationStageLabel
 ) {
+    /** Maps a {@link User} and application status snapshot to the API DTO. */
     public static UserResponse from(User user, ApplicationStatusService.Snapshot snapshot) {
         return new UserResponse(
                 user.getId(),

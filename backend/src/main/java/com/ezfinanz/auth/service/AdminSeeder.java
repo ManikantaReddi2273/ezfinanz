@@ -8,6 +8,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * On startup, creates or refreshes the configured admin user from {@code app.admin.*} properties.
+ */
 @Component
 public class AdminSeeder implements CommandLineRunner {
 
@@ -31,6 +34,7 @@ public class AdminSeeder implements CommandLineRunner {
         this.adminFullName = adminFullName;
     }
 
+    /** Upserts the admin account so credentials from config always apply. */
     @Override
     public void run(String... args) {
         String email = adminEmail.trim().toLowerCase();

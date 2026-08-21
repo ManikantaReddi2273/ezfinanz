@@ -1,3 +1,11 @@
+/**
+ * Top-level route map for EZFINANZ.
+ *
+ * Public: `/` landing, `/login` `/signup` (guests), `/auth/google/callback`, `/verify-otp`.
+ * Customer (auth + CUSTOMER): `/customer` (aliases `/verify`, `/dashboard` → `/customer`).
+ * Admin (auth + ADMIN): `/admin`, applications/users/knowledge/settings, `/admin/applications/:userId`.
+ * Unknown paths redirect to `/`.
+ */
 import { Navigate, Route, Routes } from "react-router-dom";
 import { GuestRoute, ProtectedRoute, RoleRoute } from "./components/ProtectedRoute";
 import { CustomerDashboard } from "./customer/CustomerDashboard";
@@ -9,6 +17,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { VerifyOtpPage } from "./pages/VerifyOtpPage";
 
+/** Root router wiring public, guest, customer, and admin routes. */
 export default function App() {
   return (
     <Routes>

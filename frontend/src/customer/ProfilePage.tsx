@@ -1,7 +1,11 @@
+/**
+ * Customer profile editor: update display name via `authApi.updateProfile`.
+ */
 import { useState } from "react";
 import { ApiError, authApi } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
+/** Simple profile form for the signed-in customer's full name. */
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [fullName, setFullName] = useState(user?.fullName ?? "");

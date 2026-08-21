@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
+/**
+ * REST API for quoting and confirming personal-loan EMI amount and tenure.
+ */
 @RestController
 @RequestMapping("/api/emi")
 @SecurityRequirement(name = "bearerAuth")
@@ -29,6 +32,7 @@ public class EmiController {
         this.emiService = emiService;
     }
 
+    /** Live quote of EMI, fees, net disbursement, and IRR for an amount and tenure. */
     @GetMapping("/quote")
     @Operation(summary = "Live EMI, charges, disbursement, and IRR for an amount and tenure")
     public EmiQuoteResponse quote(
@@ -39,12 +43,14 @@ public class EmiController {
         return emiService.quote((Long) authentication.getPrincipal(), amount, tenureMonths);
     }
 
+    /** Returns the customer's saved EMI selection. */
     @GetMapping
     @Operation(summary = "Get saved EMI terms")
     public EmiQuoteResponse get(Authentication authentication) {
         return emiService.get((Long) authentication.getPrincipal());
     }
 
+    /** Persists the chosen principal and tenure as confirmed loan terms. */
     @PostMapping
     @Operation(summary = "Confirm loan amount and tenure")
     public EmiQuoteResponse save(Authentication authentication, @Valid @RequestBody EmiSaveRequest request) {

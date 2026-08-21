@@ -14,6 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Manages the customer's disbursement bank account after EMI terms are confirmed.
+ * Updating the account may cascade-invalidate declaration and selfie draft data.
+ */
 @Service
 public class BankAccountService {
 
@@ -37,6 +41,7 @@ public class BankAccountService {
         this.applicationCascadeService = applicationCascadeService;
     }
 
+    /** Returns the customer's saved bank account details. */
     @Transactional(readOnly = true)
     public BankAccountResponse get(Long userId) {
         requireEmi(userId);
@@ -45,6 +50,7 @@ public class BankAccountService {
         return BankAccountResponse.from(row);
     }
 
+    /** Saves or updates the disbursement bank account for an editable application. */
     @Transactional
     public BankAccountResponse save(Long userId, BankAccountRequest request) {
         applicationLockService.requireEditable(userId);

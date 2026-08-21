@@ -1,3 +1,6 @@
+/**
+ * Floating AI support chat widget backed by `supportApi.chat`.
+ */
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, supportApi } from "../api/client";
@@ -15,6 +18,7 @@ const WELCOME: ChatMessage = {
   text: "Hi there 👋 I'm the EZFINANZ Assistant. Ask me about application steps, eligibility, EMI, KYC, selfie review, or resubmitting after rejection.",
 };
 
+/** Collapsible chat panel for in-app loan/application questions. */
 export function SupportChatWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");

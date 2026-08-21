@@ -18,6 +18,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * Persisted Know Your Customer profile for one customer: personal details, address, and ID proof.
+ */
 @Entity
 @Table(name = "kyc_profiles")
 public class KycProfile {

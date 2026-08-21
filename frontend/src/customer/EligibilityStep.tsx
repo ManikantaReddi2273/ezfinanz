@@ -1,3 +1,6 @@
+/**
+ * Application step: income/credit eligibility assessment form and results.
+ */
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError, authApi, eligibilityApi, type EligibilityAssessment, type IncomeType } from "../api/client";
@@ -16,6 +19,7 @@ type EligibilityForm = {
   designation: string;
 };
 
+/** Runs or displays eligibility; unlocks EMI when result is eligible/partial. */
 export function EligibilityStep({ onContinue, readOnly }: { onContinue: () => void; readOnly?: boolean }) {
   const { updateUser } = useAuth();
   const [existing, setExisting] = useState<EligibilityAssessment | null>(null);

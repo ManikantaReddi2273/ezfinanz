@@ -17,6 +17,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Super-admin operations for the RAG knowledge base: list, upload (store + index), and delete documents.
+ * Files go to Supabase Storage; vectors go to Pinecone for the support chatbot.
+ */
 @Service
 public class KnowledgeAdminService {
 
@@ -40,6 +44,7 @@ public class KnowledgeAdminService {
         this.superAdminEmail = superAdminEmail.trim().toLowerCase(Locale.ROOT);
     }
 
+    /** Lists all knowledge documents newest-first (super admin only). */
     @Transactional(readOnly = true)
     public List<KnowledgeDocumentResponse> list(Long actorId) {
         requireSuperAdmin(actorId);
@@ -48,6 +53,9 @@ public class KnowledgeAdminService {
                 .toList();
     }
 
+    /**
+     * Uploads a document to Supabase Storage, indexes it for RAG, and returns the saved metadata.
+     */
     @Transactional
     public KnowledgeDocumentResponse upload(Long actorId, MultipartFile file, String title) {
         requireSuperAdmin(actorId);
@@ -97,6 +105,7 @@ public class KnowledgeAdminService {
         return KnowledgeDocumentResponse.from(knowledgeDocumentRepository.save(row));
     }
 
+    /** Deletes Pinecone vectors, the Supabase file, and the DB row for a knowledge document. */
     @Transactional
     public void delete(Long actorId, Long documentId) {
         requireSuperAdmin(actorId);

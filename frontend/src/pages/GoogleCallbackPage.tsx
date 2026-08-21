@@ -1,9 +1,13 @@
+/**
+ * Google OAuth return page: stores token from query params and hydrates session.
+ */
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authApi, storeToken } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { postLoginPath } from "../auth/paths";
 
+/** Completes Google sign-in from `?token=` (or shows error from `?error=`). */
 export function GoogleCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

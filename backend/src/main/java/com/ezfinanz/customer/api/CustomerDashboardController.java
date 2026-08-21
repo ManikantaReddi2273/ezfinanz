@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API for the logged-in customer's aggregated loan-application dashboard.
+ */
 @RestController
 @RequestMapping("/api/customer")
 @SecurityRequirement(name = "bearerAuth")
@@ -22,6 +25,7 @@ public class CustomerDashboardController {
         this.customerDashboardService = customerDashboardService;
     }
 
+    /** Returns status, EMI summary, document flags, and actionable notices for the customer. */
     @GetMapping("/dashboard")
     @Operation(summary = "Application summary, EMI quote, documents flags, and notices")
     public CustomerDashboardResponse dashboard(Authentication authentication) {

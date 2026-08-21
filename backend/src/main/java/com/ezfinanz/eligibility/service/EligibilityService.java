@@ -16,6 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+/**
+ * Orchestrates eligibility assessment: requires KYC, runs the calculator, and stores results.
+ * Updating eligibility may cascade-invalidate EMI and later application steps.
+ */
 @Service
 public class EligibilityService {
 
@@ -39,6 +43,7 @@ public class EligibilityService {
         this.applicationCascadeService = applicationCascadeService;
     }
 
+    /** Returns the persisted eligibility assessment for the customer. */
     @Transactional(readOnly = true)
     public EligibilityResponse get(Long userId) {
         EligibilityAssessment row = eligibilityRepository.findByUser_Id(userId)
@@ -46,6 +51,7 @@ public class EligibilityService {
         return EligibilityResponse.from(row);
     }
 
+    /** Evaluates and saves eligibility from income, credit score, debts, and requested amount. */
     @Transactional
     public EligibilityResponse assess(Long userId, EligibilityRequest request) {
         applicationLockService.requireEditable(userId);

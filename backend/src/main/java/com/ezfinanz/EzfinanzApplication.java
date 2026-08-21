@@ -7,9 +7,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
+/**
+ * Spring Boot entry point for the EZFINANZ personal-loan backend.
+ * Loads local env vars, ensures the Postgres database exists, then starts the app.
+ */
 @SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 public class EzfinanzApplication {
 
+    /** Bootstraps configuration and launches the Spring application context. */
     public static void main(String[] args) {
         loadLocalDotEnv();
         PostgresDatabaseCreator.ensureDatabaseExists();

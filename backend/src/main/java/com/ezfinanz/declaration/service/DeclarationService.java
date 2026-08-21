@@ -14,6 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Records customer acceptance of loan terms after a bank account is on file.
+ * Re-accepting after a prior acceptance may clear a draft selfie.
+ */
 @Service
 public class DeclarationService {
 
@@ -39,6 +43,7 @@ public class DeclarationService {
         this.applicationCascadeService = applicationCascadeService;
     }
 
+    /** Returns declaration status, or an empty (not accepted) view for the current terms. */
     @Transactional(readOnly = true)
     public DeclarationResponse get(Long userId) {
         requireBank(userId);
@@ -47,6 +52,7 @@ public class DeclarationService {
                 .orElseGet(() -> DeclarationResponse.empty(TERMS_VERSION));
     }
 
+    /** Persists acceptance of the current loan declaration terms. */
     @Transactional
     public DeclarationResponse accept(Long userId, DeclarationRequest request) {
         applicationLockService.requireEditable(userId);

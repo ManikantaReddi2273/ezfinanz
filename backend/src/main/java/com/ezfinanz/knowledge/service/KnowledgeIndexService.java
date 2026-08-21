@@ -14,6 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Indexes knowledge documents into Pinecone for RAG: extract text, chunk, embed via OpenAI, upsert vectors.
+ * Reads source files from Supabase Storage via {@link LocalFileStorage}.
+ */
 @Service
 public class KnowledgeIndexService {
 
@@ -37,11 +41,15 @@ public class KnowledgeIndexService {
         this.fileStorage = fileStorage;
     }
 
+    /** Ensures OpenAI and Pinecone are configured before indexing. */
     public void requireReady() {
         openAiClient.requireConfigured();
         pineconeClient.requireConfigured();
     }
 
+    /**
+     * Builds and upserts RAG vectors for a document, then marks it {@link KnowledgeDocumentStatus#INDEXED}.
+     */
     public void index(KnowledgeDocument document) {
         requireReady();
         byte[] bytes = fileStorage.readBytes(document.getStoredPath());
@@ -74,6 +82,7 @@ public class KnowledgeIndexService {
         document.setErrorMessage(null);
     }
 
+    /** Removes all Pinecone vectors for a knowledge document (no-op if Pinecone is not configured). */
     public void deleteVectors(Long documentId) {
         if (pineconeClient.isConfigured()) {
             pineconeClient.deleteByDocumentId(documentId);

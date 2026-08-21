@@ -16,6 +16,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Google OAuth redirect helpers: build the authorize URL, exchange the code for an ID token,
+ * and produce frontend redirect URLs with a JWT or error message.
+ */
 @Service
 public class GoogleOAuthService {
 
@@ -44,6 +48,7 @@ public class GoogleOAuthService {
         this.restClient = RestClient.create();
     }
 
+    /** Builds Google's OAuth authorization URL for the browser redirect. */
     public String buildAuthorizationUrl() {
         return UriComponentsBuilder.fromUriString(GOOGLE_AUTH_URL)
                 .queryParam("client_id", clientId)
@@ -57,6 +62,10 @@ public class GoogleOAuthService {
                 .toUriString();
     }
 
+    /**
+     * Exchanges the authorization code for an ID token, logs the user in,
+     * and returns a frontend redirect URL carrying the JWT.
+     */
     public String completeOAuthCallback(String code) {
         String idToken = exchangeCodeForIdToken(code);
         AuthResponse authResponse = authService.loginGoogle(idToken);
@@ -64,11 +73,13 @@ public class GoogleOAuthService {
                 + URLEncoder.encode(authResponse.token(), StandardCharsets.UTF_8);
     }
 
+    /** Frontend redirect URL with an error query param when OAuth fails. */
     public String buildFailureRedirect(String message) {
         return frontendUrl + "/auth/google/callback?error="
                 + URLEncoder.encode(message, StandardCharsets.UTF_8);
     }
 
+    /** Trades the OAuth code for Google's ID token via the token endpoint. */
     private String exchangeCodeForIdToken(String code) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("code", code);

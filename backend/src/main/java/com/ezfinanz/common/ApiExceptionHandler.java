@@ -15,11 +15,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+/**
+ * Global REST exception mapper that converts failures into consistent {@link ErrorResponse} JSON.
+ */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+    /** Maps intentional {@link ApiException}s to their declared status and code. */
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApi(ApiException ex) {
         if (ex.getStatus().is5xxServerError() || ex.getStatus().value() == 502) {
@@ -29,6 +33,7 @@ public class ApiExceptionHandler {
                 .body(new ErrorResponse(ex.getCode(), ex.getMessage()));
     }
 
+    /** Returns the first field validation error for request-body binding failures. */
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
     public ResponseEntity<ErrorResponse> handleValidation(Exception ex) {
         String message = "Validation failed";
@@ -42,17 +47,20 @@ public class ApiExceptionHandler {
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", message));
     }
 
+    /** Handles constraint violations from method-level {@code @Validated} parameters. */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraint(ConstraintViolationException ex) {
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", ex.getMessage()));
     }
 
+    /** Maps Spring Security bad-credentials failures to a client-safe 401. */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse("INVALID_CREDENTIALS", "Invalid email or password"));
     }
 
+    /** Translates unique-constraint / DB integrity conflicts into friendly conflict messages. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.error("Database constraint error", ex);
@@ -79,24 +87,28 @@ public class ApiExceptionHandler {
                 ));
     }
 
+    /** Handles unknown API paths. */
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleMissingResource(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("NOT_FOUND", "This API endpoint was not found."));
     }
 
+    /** Handles HTTP methods not allowed on an endpoint. */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethod(HttpRequestMethodNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(new ErrorResponse("METHOD_NOT_ALLOWED", "This action is not supported."));
     }
 
+    /** Handles missing required query/form parameters. */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException ex) {
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse("VALIDATION_ERROR", "Missing field: " + ex.getParameterName()));
     }
 
+    /** Catch-all for unexpected errors; logs and returns a generic 500. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleOther(Exception ex) {
         log.error("Unhandled error", ex);

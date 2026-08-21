@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
+/** Request body to confirm a chosen loan principal and tenure in months. */
 public class EmiSaveRequest {
 
     @NotNull

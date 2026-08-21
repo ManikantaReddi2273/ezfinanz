@@ -16,6 +16,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+/**
+ * Issues and verifies hashed email OTP challenges stored in {@code otp_challenges}.
+ * Phone OTPs are handled by Twilio separately.
+ */
 @Service
 public class OtpService {
 
@@ -35,10 +39,15 @@ public class OtpService {
         this.ttlMinutes = ttlMinutes;
     }
 
+    /** OTP lifetime in minutes (from config). */
     public int getTtlMinutes() {
         return ttlMinutes;
     }
 
+    /**
+     * Invalidates prior active codes for the target/channel, stores a new hashed OTP,
+     * and returns the plaintext code for delivery (e.g. email).
+     */
     @Transactional
     public String issue(String target, OtpChannel channel, OtpPurpose purpose) {
         List<OtpChallenge> previous = otpChallengeRepository.findByTargetAndChannelAndConsumedAtIsNull(target, channel);
@@ -59,6 +68,7 @@ public class OtpService {
         return code;
     }
 
+    /** Validates the latest active OTP for the target/channel and marks it consumed. */
     @Transactional
     public void verify(String target, OtpChannel channel, String rawCode) {
         OtpChallenge challenge = otpChallengeRepository

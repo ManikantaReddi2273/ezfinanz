@@ -22,6 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
+/**
+ * Business logic for customer authentication: email/password, phone OTP, Google sign-in,
+ * and post-login email/phone verification steps.
+ */
 @Service
 public class AuthService {
 
@@ -54,6 +58,7 @@ public class AuthService {
         this.googleIdTokenVerifier = googleIdTokenVerifier;
     }
 
+    /** Registers a new email account (or resends OTP if unverified) and emails a verification code. */
     public MessageOrAuth signupEmail(String email, String password, String fullName) {
         String normalizedEmail = normalizeEmail(email);
         User existing = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
@@ -81,6 +86,7 @@ public class AuthService {
         return MessageOrAuth.message("Verification code sent to your email.");
     }
 
+    /** Logs in a verified email user; rejects invalid credentials or unverified email. */
     @Transactional
     public AuthResponse loginEmail(String email, String password) {
         String normalizedEmail = normalizeEmail(email);
@@ -103,6 +109,7 @@ public class AuthService {
         return toAuthResponse(user);
     }
 
+    /** Creates or updates a customer from a verified Google ID token and returns a JWT. */
     @Transactional
     public AuthResponse loginGoogle(String idToken) {
         GoogleIdToken.Payload payload = verifyGoogleIdToken(idToken);
@@ -151,6 +158,7 @@ public class AuthService {
         }
     }
 
+    /** Resends email verification OTP for an existing unverified account. */
     public MessageOrAuth resendEmailOtp(String email) {
         String normalizedEmail = normalizeEmail(email);
         User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
@@ -162,6 +170,7 @@ public class AuthService {
         return MessageOrAuth.message("Verification code sent to your email.");
     }
 
+    /** Verifies the email OTP, marks the account verified, and returns a JWT. */
     public AuthResponse verifyEmailOtp(String email, String otp) {
         String normalizedEmail = normalizeEmail(email);
         User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
@@ -172,6 +181,7 @@ public class AuthService {
         return toAuthResponse(user);
     }
 
+    /** Sends a Twilio OTP; creates a phone-only customer if the number is new. */
     public MessageOrAuth sendPhoneOtp(String phone) {
         String normalizedPhone = normalizePhone(phone);
         if (userRepository.findByPhone(normalizedPhone).isEmpty()) {
@@ -186,6 +196,7 @@ public class AuthService {
         return MessageOrAuth.message("Verification code sent to your phone.");
     }
 
+    /** Verifies the phone OTP via Twilio, marks phone verified, and returns a JWT. */
     @Transactional
     public AuthResponse verifyPhoneOtp(String phone, String otp) {
         String normalizedPhone = normalizePhone(phone);
@@ -197,11 +208,13 @@ public class AuthService {
         return toAuthResponse(user);
     }
 
+    /** Returns the user's profile plus loan-application progress snapshot. */
     @Transactional(readOnly = true)
     public UserResponse me(Long userId) {
         return toUserResponse(requireUser(userId));
     }
 
+    /** Updates the customer's display name. */
     @Transactional
     public UserResponse updateProfile(Long userId, String fullName) {
         User user = requireUser(userId);
@@ -210,6 +223,7 @@ public class AuthService {
         return toUserResponse(user);
     }
 
+    /** Sends an email OTP for a logged-in customer to verify or attach an email. */
     public MessageOrAuth sendEmailVerification(Long userId, String requestedEmail) {
         User user = requireUser(userId);
         if (user.getRole() == Role.ADMIN) {
@@ -230,6 +244,7 @@ public class AuthService {
         return MessageOrAuth.message("Verification code sent to your email.");
     }
 
+    /** Confirms the logged-in customer's email OTP and marks email verified. */
     public UserResponse confirmEmailVerification(Long userId, String otp) {
         User user = requireUser(userId);
         if (user.getEmail() == null) {
@@ -241,6 +256,7 @@ public class AuthService {
         return toUserResponse(user);
     }
 
+    /** Sends a phone OTP for a logged-in customer to verify or attach a phone number. */
     public MessageOrAuth sendPhoneVerification(Long userId, String requestedPhone) {
         User user = requireUser(userId);
         if (user.getRole() == Role.ADMIN) {
@@ -261,6 +277,7 @@ public class AuthService {
         return MessageOrAuth.message("Verification code sent to your phone.");
     }
 
+    /** Confirms the logged-in customer's phone OTP and marks phone verified. */
     public UserResponse confirmPhoneVerification(Long userId, String otp) {
         User user = requireUser(userId);
         if (user.getPhone() == null) {
@@ -339,6 +356,7 @@ public class AuthService {
         return email.trim().toLowerCase();
     }
 
+    /** Normalizes to E.164-ish form; 10-digit numbers get a {@code +91} prefix. */
     static String normalizePhone(String phone) {
         String trimmed = phone.trim().replaceAll("[\\s-()]", "");
         if (trimmed.matches("^[0-9]{10}$")) {
@@ -357,6 +375,7 @@ public class AuthService {
         return value.trim();
     }
 
+    /** Lightweight result that carries either a status message or an auth payload. */
     public record MessageOrAuth(String message, AuthResponse auth) {
         static MessageOrAuth message(String message) {
             return new MessageOrAuth(message, null);

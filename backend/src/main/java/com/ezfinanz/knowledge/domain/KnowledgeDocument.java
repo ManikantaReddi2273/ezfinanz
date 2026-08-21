@@ -13,6 +13,10 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
+/**
+ * Persistent metadata for a RAG knowledge-base document (title, Supabase path, indexing status).
+ * Actual file bytes live in Supabase Storage; chunk embeddings live in Pinecone.
+ */
 @Entity
 @Table(name = "knowledge_documents")
 public class KnowledgeDocument {

@@ -15,6 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Human support-ticket flow (Contact Support): persist messages and email the support inbox.
+ * Distinct from the RAG chatbot ({@link SupportChatService}).
+ */
 @Service
 public class SupportService {
 
@@ -35,6 +39,7 @@ public class SupportService {
         this.supportNotifyEmail = supportNotifyEmail.trim().toLowerCase();
     }
 
+    /** Lists support tickets for a customer, newest first. */
     @Transactional(readOnly = true)
     public List<SupportTicketResponse> list(Long userId) {
         return supportTicketRepository.findByUser_IdOrderByCreatedAtDesc(userId).stream()
@@ -42,6 +47,7 @@ public class SupportService {
                 .toList();
     }
 
+    /** Creates a support ticket and emails the configured support notify address. */
     @Transactional
     public SupportTicketResponse create(Long userId, SupportTicketRequest request) {
         User user = userRepository.findById(userId)

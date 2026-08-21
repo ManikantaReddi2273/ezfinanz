@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
+/** Aggregated dashboard payload for the logged-in customer's loan application. */
 public record CustomerDashboardResponse(
         String applicationId,
         Instant lastUpdated,

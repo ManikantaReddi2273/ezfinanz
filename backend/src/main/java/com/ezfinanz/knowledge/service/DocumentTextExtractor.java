@@ -11,9 +11,17 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+/**
+ * Extracts plain text from knowledge-base uploads (.txt, .md, .pdf) before RAG chunking and indexing.
+ */
 @Component
 public class DocumentTextExtractor {
 
+    /**
+     * Returns extracted text for the given file bytes and original filename extension.
+     *
+     * @throws ApiException if the type is unsupported or the file cannot be read
+     */
     public String extract(byte[] bytes, String originalName) {
         String ext = extension(originalName);
         try {

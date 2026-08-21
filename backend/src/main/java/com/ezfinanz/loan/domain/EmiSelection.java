@@ -19,6 +19,9 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * Persisted EMI selection for one customer: principal, tenure, fees, EMI, and IRR.
+ */
 @Entity
 @Table(name = "emi_selections")
 public class EmiSelection {

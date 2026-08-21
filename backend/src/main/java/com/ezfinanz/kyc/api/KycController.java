@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * REST API for customer KYC (identity, address, and optional ID document upload).
+ */
 @RestController
 @RequestMapping("/api/kyc")
 @SecurityRequirement(name = "bearerAuth")
@@ -32,12 +35,14 @@ public class KycController {
         this.kycService = kycService;
     }
 
+    /** Returns the logged-in customer's submitted KYC profile. */
     @GetMapping
     @Operation(summary = "Get submitted KYC for the logged-in customer")
     public KycResponse get(Authentication authentication) {
         return kycService.get((Long) authentication.getPrincipal());
     }
 
+    /** Creates or updates KYC details, optionally attaching an ID document file. */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create or update KYC, optionally with an ID document")
     public KycResponse save(
@@ -60,6 +65,7 @@ public class KycController {
         );
     }
 
+    /** Streams the customer's uploaded ID document for inline viewing/download. */
     @GetMapping("/document")
     @Operation(summary = "Download the uploaded ID document")
     public ResponseEntity<Resource> document(Authentication authentication) {

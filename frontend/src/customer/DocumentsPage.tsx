@@ -1,3 +1,6 @@
+/**
+ * Lists and downloads KYC / selfie files attached to the customer's application.
+ */
 import { FileText, Image } from "lucide-react";
 import { useEffect, useState } from "react";
 import { customerApi, kycApi, selfieApi, type CustomerDashboardData } from "../api/client";
@@ -11,6 +14,7 @@ async function download(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Customer documents page with download actions for stored files. */
 export function DocumentsPage() {
   const [data, setData] = useState<CustomerDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);

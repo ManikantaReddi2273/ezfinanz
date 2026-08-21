@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 
+/**
+ * Browser redirect flow for Google OAuth: start sign-in and handle the callback
+ * by redirecting back to the frontend with a JWT or error.
+ */
 @RestController
 @RequestMapping("/api/auth/google")
 @Tag(name = "Google auth", description = "Google OAuth redirect login")
@@ -23,12 +27,14 @@ public class GoogleOAuthController {
         this.googleOAuthService = googleOAuthService;
     }
 
+    /** Redirects the browser to Google's authorization page. */
     @GetMapping("/start")
     @Operation(summary = "Redirect the browser to Google sign-in")
     public void start(HttpServletResponse response) throws IOException {
         response.sendRedirect(googleOAuthService.buildAuthorizationUrl());
     }
 
+    /** Exchanges the Google auth code and redirects to the frontend with token or error. */
     @GetMapping("/callback")
     @Operation(summary = "Google OAuth callback — exchanges code and redirects to the frontend")
     public void callback(

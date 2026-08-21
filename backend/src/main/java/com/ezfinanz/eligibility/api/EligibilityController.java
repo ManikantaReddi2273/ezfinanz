@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API for loan eligibility checks based on income, credit score, and debts.
+ */
 @RestController
 @RequestMapping("/api/eligibility")
 @SecurityRequirement(name = "bearerAuth")
@@ -26,12 +29,14 @@ public class EligibilityController {
         this.eligibilityService = eligibilityService;
     }
 
+    /** Returns the customer's latest eligibility assessment. */
     @GetMapping
     @Operation(summary = "Get the latest eligibility assessment")
     public EligibilityResponse get(Authentication authentication) {
         return eligibilityService.get((Long) authentication.getPrincipal());
     }
 
+    /** Runs eligibility using submitted financial details and persists the result. */
     @PostMapping
     @Operation(summary = "Submit financial details and run eligibility")
     public EligibilityResponse assess(Authentication authentication, @Valid @RequestBody EligibilityRequest request) {

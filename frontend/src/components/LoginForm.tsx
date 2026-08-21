@@ -1,3 +1,6 @@
+/**
+ * Email/password and phone-OTP login form, plus Google sign-in link.
+ */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -10,6 +13,7 @@ import { GoogleSignInButton } from "./GoogleSignInButton";
 type EmailForm = { email: string; password: string };
 type PhoneForm = { phone: string };
 
+/** Tabbed login UI; unverified email logins are sent to OTP verification. */
 export function LoginForm() {
   const [tab, setTab] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);

@@ -20,6 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/**
+ * Quotes and saves EMI terms within the customer's eligible loan range.
+ * Requires a successful eligibility result; updates may invalidate bank and later steps.
+ */
 @Service
 public class EmiService {
 
@@ -43,6 +47,7 @@ public class EmiService {
         this.applicationCascadeService = applicationCascadeService;
     }
 
+    /** Calculates a live EMI quote without persisting; defaults amount/tenure when omitted. */
     @Transactional(readOnly = true)
     public EmiQuoteResponse quote(Long userId, BigDecimal requestedPrincipal, Integer tenureMonths) {
         EligibilityAssessment eligibility = requireEligible(userId);
@@ -55,6 +60,7 @@ public class EmiService {
         return EmiQuoteResponse.from(min, max, eligibility.getCreditBand(), quote, null);
     }
 
+    /** Returns the customer's previously saved EMI selection. */
     @Transactional(readOnly = true)
     public EmiQuoteResponse get(Long userId) {
         EligibilityAssessment eligibility = requireEligible(userId);
@@ -63,6 +69,7 @@ public class EmiService {
         return EmiQuoteResponse.fromSaved(EligibilityCalculator.MIN_LOAN, eligibility.getMaxEligibleAmount(), row);
     }
 
+    /** Validates and persists confirmed principal and tenure with computed fees and EMI. */
     @Transactional
     public EmiQuoteResponse save(Long userId, EmiSaveRequest request) {
         applicationLockService.requireEditable(userId);

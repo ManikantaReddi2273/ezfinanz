@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
+/** API view of an EMI quote or saved selection, including allowed amount bounds and tenures. */
 public record EmiQuoteResponse(
         BigDecimal minAmount,
         BigDecimal maxAmount,
@@ -29,6 +30,7 @@ public record EmiQuoteResponse(
         BigDecimal irrPercent,
         Instant selectedAt
 ) {
+    /** Builds a response from a live calculator quote. */
     public static EmiQuoteResponse from(
             BigDecimal minAmount,
             BigDecimal maxAmount,
@@ -59,6 +61,7 @@ public record EmiQuoteResponse(
         );
     }
 
+    /** Builds a response from a persisted EMI selection. */
     public static EmiQuoteResponse fromSaved(
             BigDecimal minAmount,
             BigDecimal maxAmount,

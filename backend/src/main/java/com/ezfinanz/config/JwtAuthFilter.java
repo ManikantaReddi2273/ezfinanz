@@ -18,6 +18,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Reads the Bearer JWT from each request and, when valid, sets the Spring Security context
+ * with the user's id and role. Invalid tokens clear the context but do not block the chain
+ * (authorization is enforced later by the security filter chain).
+ */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -49,6 +54,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /** Places the user id as principal and {@code ROLE_<role>} as the granted authority. */
     private void authenticate(User user) {
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 user.getId(),

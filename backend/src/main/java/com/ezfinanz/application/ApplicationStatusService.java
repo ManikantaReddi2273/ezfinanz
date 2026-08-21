@@ -14,6 +14,9 @@ import com.ezfinanz.selfie.repo.SelfieRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Derives the customer's current loan-application stage from completed steps and selfie review.
+ */
 @Service
 public class ApplicationStatusService {
 
@@ -40,6 +43,7 @@ public class ApplicationStatusService {
         this.selfieRepository = selfieRepository;
     }
 
+    /** Builds a progress snapshot (completed flags and resolved {@link ApplicationStage}). */
     @Transactional(readOnly = true)
     public Snapshot snapshot(User user) {
         Long userId = user.getId();
@@ -123,6 +127,7 @@ public class ApplicationStatusService {
         return ApplicationStage.CONTACTS_PENDING;
     }
 
+    /** Immutable progress view used by dashboards and admin application detail. */
     public record Snapshot(
             boolean kycCompleted,
             boolean eligibilityCompleted,
@@ -136,6 +141,7 @@ public class ApplicationStatusService {
             boolean disbursed,
             ApplicationStage stage
     ) {
+        /** Display label for the resolved application stage. */
         public String stageLabel() {
             return stage.getLabel();
         }

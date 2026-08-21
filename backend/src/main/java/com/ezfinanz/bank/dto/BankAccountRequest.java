@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/** Request body for saving a disbursement bank account (holder, number, IFSC, bank name). */
 public class BankAccountRequest {
 
     @NotBlank

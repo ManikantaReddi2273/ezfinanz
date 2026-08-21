@@ -1,3 +1,6 @@
+/**
+ * Modal confirm dialog and a thin `window.confirm` wrapper hook.
+ */
 import { useEffect } from "react";
 
 type ConfirmDialogProps = {
@@ -19,6 +22,7 @@ const toneClasses = {
   red: "bg-rose-600 hover:bg-rose-700",
 };
 
+/** Accessible confirm/cancel modal; Escape and backdrop click cancel. */
 export function ConfirmDialog({
   open,
   title,
@@ -83,6 +87,7 @@ export function ConfirmDialog({
   );
 }
 
+/** Fallback confirm via `window.confirm` for simple yes/no prompts. */
 export function useConfirmDialog() {
   return {
     confirm: (title: string, message: string) => window.confirm(`${title}\n\n${message}`),

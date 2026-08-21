@@ -1,9 +1,13 @@
+/**
+ * Login page wrapping LoginForm in AuthLayout.
+ */
 import { Navigate } from "react-router-dom";
 import { AuthLayout } from "../components/AuthLayout";
 import { LoginForm } from "../components/LoginForm";
 import { useAuth } from "../auth/AuthContext";
 import { postLoginPath } from "../auth/paths";
 
+/** Guest login screen; redirects if already signed in. */
 export function LoginPage() {
   const { user, loading } = useAuth();
 

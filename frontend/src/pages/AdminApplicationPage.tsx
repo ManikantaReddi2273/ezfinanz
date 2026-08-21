@@ -1,3 +1,6 @@
+/**
+ * Admin detail view for one application: tabs, selfie review, and disbursement.
+ */
 import { ArrowLeft, Check, Download, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -19,6 +22,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "documents", label: "Documents & Selfie" },
 ];
 
+/** Loads and reviews a single applicant by `:userId` route param. */
 export function AdminApplicationPage() {
   const { userId } = useParams();
   const id = Number(userId);

@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
 
+/** API view of a submitted KYC profile, including computed age and document presence. */
 public record KycResponse(
         String fullName,
         LocalDate dateOfBirth,
@@ -23,6 +24,7 @@ public record KycResponse(
         String documentFileName,
         Instant submittedAt
 ) {
+    /** Maps a persisted KYC entity to the API response shape. */
     public static KycResponse from(KycProfile profile) {
         int age = Period.between(profile.getDateOfBirth(), LocalDate.now()).getYears();
         return new KycResponse(

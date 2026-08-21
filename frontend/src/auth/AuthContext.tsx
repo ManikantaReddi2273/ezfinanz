@@ -1,3 +1,6 @@
+/**
+ * Auth session context: loads `/me` from stored JWT and exposes login/logout helpers.
+ */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { authApi, clearToken, getStoredToken, storeToken, type User } from "../api/client";
 
@@ -11,6 +14,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/** Provides session state to the tree; hydrates user from localStorage on mount. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** Access the current auth session; must be used under {@link AuthProvider}. */
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {

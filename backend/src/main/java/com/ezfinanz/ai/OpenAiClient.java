@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * HTTP client for OpenAI embeddings and chat completions.
+ * Powers the RAG support chatbot (embed queries / generate replies) and knowledge-document indexing.
+ */
 @Component
 public class OpenAiClient {
 
@@ -36,10 +40,12 @@ public class OpenAiClient {
                 .build();
     }
 
+    /** Returns true when an OpenAI API key is present. */
     public boolean isConfigured() {
         return !apiKey.isBlank();
     }
 
+    /** Throws if OpenAI is not configured so callers fail fast with a clear API error. */
     public void requireConfigured() {
         if (!isConfigured()) {
             throw new ApiException(
@@ -50,6 +56,9 @@ public class OpenAiClient {
         }
     }
 
+    /**
+     * Embeds one or more text chunks into vectors for Pinecone indexing or RAG retrieval.
+     */
     @SuppressWarnings("unchecked")
     public List<float[]> embed(List<String> texts) {
         requireConfigured();
@@ -97,10 +106,15 @@ public class OpenAiClient {
         }
     }
 
+    /** Embeds a single string (e.g. a chatbot user question for RAG search). */
     public float[] embedOne(String text) {
         return embed(List.of(text)).getFirst();
     }
 
+    /**
+     * Sends a system + user message to the chat model and returns the assistant reply text.
+     * Used by the RAG support chatbot for grounded answers and conversational greetings.
+     */
     @SuppressWarnings("unchecked")
     public String chat(String systemPrompt, String userMessage) {
         requireConfigured();

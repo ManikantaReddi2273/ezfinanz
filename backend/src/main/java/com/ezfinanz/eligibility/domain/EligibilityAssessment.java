@@ -18,6 +18,9 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * Persisted loan eligibility assessment for one customer, including inputs and calculator outputs.
+ */
 @Entity
 @Table(name = "eligibility_assessments")
 public class EligibilityAssessment {

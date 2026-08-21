@@ -19,6 +19,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+/**
+ * RAG support chatbot: embeds the customer question, retrieves Pinecone knowledge chunks, and answers via OpenAI.
+ * Separate from human support tickets ({@link SupportService}).
+ */
 @Service
 public class SupportChatService {
 
@@ -47,6 +51,9 @@ public class SupportChatService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Answers a customer message using RAG when relevant docs match; otherwise a polite no-context or conversational reply.
+     */
     public SupportChatResponse chat(Long userId, String message) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Not authenticated"));

@@ -11,6 +11,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+/**
+ * Sends transactional emails for OTP verification, support requests, and application review updates.
+ */
 @Service
 public class EmailOtpService {
 
@@ -27,6 +30,7 @@ public class EmailOtpService {
         this.fromAddress = fromAddress;
     }
 
+    /** Emails a one-time verification code to the given address. */
     public void sendOtp(String email, String code, int ttlMinutes) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -52,6 +56,7 @@ public class EmailOtpService {
         }
     }
 
+    /** Notifies the support mailbox about a customer Help & Support message. */
     public void sendSupportRequest(
             String notifyEmail,
             String customerName,
@@ -94,6 +99,7 @@ public class EmailOtpService {
         return value == null || value.isBlank() ? "—" : value.trim();
     }
 
+    /** Emails the applicant after an admin approve/reject decision. */
     public void sendApplicationReviewUpdate(
             String email,
             String applicantName,

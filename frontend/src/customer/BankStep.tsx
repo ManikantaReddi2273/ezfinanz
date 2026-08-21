@@ -1,3 +1,6 @@
+/**
+ * Application step: disbursement bank account capture and confirm.
+ */
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError, authApi, bankApi, type BankAccount } from "../api/client";
@@ -12,6 +15,7 @@ type BankForm = {
   bankName: string;
 };
 
+/** Collects and saves bank details for loan disbursement. */
 export function BankStep({ onContinue, readOnly }: { onContinue: () => void; readOnly?: boolean }) {
   const { user, updateUser } = useAuth();
   const [existing, setExisting] = useState<BankAccount | null>(null);

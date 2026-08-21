@@ -5,12 +5,18 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Splits knowledge-document text into overlapping chunks for OpenAI embeddings and Pinecone RAG storage.
+ */
 @Component
 public class TextChunker {
 
     private static final int CHUNK_SIZE = 800;
     private static final int OVERLAP = 150;
 
+    /**
+     * Chunks text into ~800-character segments with overlap, preferring breaks at newlines or spaces.
+     */
     public List<String> chunk(String text) {
         if (text == null) {
             return List.of();

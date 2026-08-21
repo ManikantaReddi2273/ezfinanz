@@ -1,3 +1,6 @@
+/**
+ * Application step: verify email then phone via OTP (or show both verified).
+ */
 import { useEffect, useState } from "react";
 import { ApiError, authApi } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -5,6 +8,7 @@ import { CheckCircle2, Mail, Smartphone } from "lucide-react";
 import { FlowCard, flowGhost, flowInput, flowPrimary } from "./FlowCard";
 import { OtpBoxes } from "./OtpBoxes";
 
+/** Contact verification step inside the customer apply flow. */
 export function VerificationStep({ onContinue, readOnly }: { onContinue: () => void; readOnly?: boolean }) {
   const { user } = useAuth();
   if (!user) {
