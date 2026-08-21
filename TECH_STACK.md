@@ -2,7 +2,7 @@
 
 This document **locks the technology choices** for the EZFINANZ personal loan application solution.
 
-It maps to [Personal20SystemE29320220Challenge.md](./Personal20SystemE29320220Challenge.md). The challenge allows any stack; the product must deliver a complete, clear customer and admin flow. This stack is chosen to do that without extra operational complexity.
+It maps to [Personal_loan_System_Challenge.md](./Personal_loan_System_Challenge.md). The challenge allows any stack; the product must deliver a complete, clear customer and admin flow. This stack is chosen to do that without extra operational complexity.
 
 **Architecture:** React (TypeScript) + Spring Boot 3 **modular monolith** + PostgreSQL + JWT.
 
@@ -10,24 +10,30 @@ It maps to [Personal20SystemE29320220Challenge.md](./Personal20SystemE29320220Ch
 
 ---
 
+
+
 ## 1. Locked stack
 
-| Layer | Choice | Why (locked) |
-| --- | --- | --- |
-| Frontend | React + TypeScript + Vite | Fast, typed, standard SPA for the loan wizard and admin dashboard |
-| Routing / forms | React Router + React Hook Form | Multi-step customer journey with validation |
-| Styling | Tailwind CSS | Responsive mobile and desktop without a heavy UI kit |
-| Backend | Spring Boot 3 (single service) | Eligibility, EMI, IRR, and application status live in one process |
-| Architecture style | Modular monolith | Domain modules (auth, KYC, loan, admin) without distributed services |
-| Security | Spring Security + JWT | Same login page; role-based routing for `CUSTOMER` and `ADMIN` |
-| Database | PostgreSQL | Users, applications, KYC, bank, stage audit |
-| Files | Local file system | ID document photo and live selfie (configured upload directory) |
-| Phone OTP | Twilio SMS | Real SMS OTP for phone signup and verification |
-| Email OTP | SMTP | Real email OTP for signup and email verification |
-| OAuth | Google OAuth — **future** | Not in v1; email/password and phone OTP cover login now |
-| API docs | Springdoc OpenAPI | Reviewers can inspect and try APIs |
+
+| Layer              | Choice                         | Why (locked)                                                         |
+| ------------------ | ------------------------------ | -------------------------------------------------------------------- |
+| Frontend           | React + TypeScript + Vite      | Fast, typed, standard SPA for the loan wizard and admin dashboard    |
+| Routing / forms    | React Router + React Hook Form | Multi-step customer journey with validation                          |
+| Styling            | Tailwind CSS                   | Responsive mobile and desktop without a heavy UI kit                 |
+| Backend            | Spring Boot 3 (single service) | Eligibility, EMI, IRR, and application status live in one process    |
+| Architecture style | Modular monolith               | Domain modules (auth, KYC, loan, admin) without distributed services |
+| Security           | Spring Security + JWT          | Same login page; role-based routing for `CUSTOMER` and `ADMIN`       |
+| Database           | PostgreSQL                     | Users, applications, KYC, bank, stage audit                          |
+| Files              | Local file system              | ID document photo and live selfie (configured upload directory)      |
+| Phone OTP          | Twilio SMS                     | Real SMS OTP for phone signup and verification                       |
+| Email OTP          | SMTP                           | Real email OTP for signup and email verification                     |
+| OAuth              | Google OAuth — **future**      | Not in v1; email/password and phone OTP cover login now              |
+| API docs           | Springdoc OpenAPI              | Reviewers can inspect and try APIs                                   |
+
 
 ---
+
+
 
 ## 2. What this stack must support
 
@@ -65,17 +71,21 @@ From the challenge, the stack must make these flows real end to end:
 
 ---
 
+
+
 ## 3. Frontend (locked)
 
-| Item | Choice |
-| --- | --- |
-| Runtime | Node.js (LTS) |
-| App | React 18+ with TypeScript |
-| Bundler | Vite |
-| Routing | React Router |
-| Forms | React Hook Form |
-| Styling | Tailwind CSS |
-| HTTP | Fetch or Axios, with JWT on protected calls |
+
+| Item    | Choice                                      |
+| ------- | ------------------------------------------- |
+| Runtime | Node.js (LTS)                               |
+| App     | React 18+ with TypeScript                   |
+| Bundler | Vite                                        |
+| Routing | React Router                                |
+| Forms   | React Hook Form                             |
+| Styling | Tailwind CSS                                |
+| HTTP    | Fetch or Axios, with JWT on protected calls |
+
 
 **UI split**
 
@@ -91,83 +101,105 @@ From the challenge, the stack must make these flows real end to end:
 
 ---
 
+
+
 ## 4. Backend (locked)
 
-| Item | Choice |
-| --- | --- |
-| Language | Java 21 |
-| Framework | Spring Boot 3 |
-| API | REST |
-| Persistence | Spring Data JPA + Hibernate |
-| Security | Spring Security, BCrypt password hashing, JWT |
-| Docs | Springdoc OpenAPI (Swagger UI) |
-| Build | Maven |
+
+| Item        | Choice                                        |
+| ----------- | --------------------------------------------- |
+| Language    | Java 21                                       |
+| Framework   | Spring Boot 3                                 |
+| API         | REST                                          |
+| Persistence | Spring Data JPA + Hibernate                   |
+| Security    | Spring Security, BCrypt password hashing, JWT |
+| Docs        | Springdoc OpenAPI (Swagger UI)                |
+| Build       | Maven                                         |
+
+
+
 
 ### Modular monolith (not microservices)
 
 One deployable Spring Boot application. Packages stay separate so the code is easy to grow later:
 
-| Module | Responsibility |
-| --- | --- |
-| `auth` | Email/password, phone OTP (Twilio), email OTP (SMTP), JWT, roles |
-| `application` | One loan application per customer, current stage, timestamps |
-| `kyc` | Identity and address, optional ID photo |
+
+| Module        | Responsibility                                                                       |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `auth`        | Email/password, phone OTP (Twilio), email OTP (SMTP), JWT, roles                     |
+| `application` | One loan application per customer, current stage, timestamps                         |
+| `kyc`         | Identity and address, optional ID photo                                              |
 | `eligibility` | Income, amount, CIBIL, debts, employer; Eligible / Partially Eligible / Not Eligible |
-| `loan` | EMI tenure, interest, fees, GST, net disbursement, IRR |
-| `bank` | Disbursement account (holder, number, IFSC, bank name) |
-| `declaration` | Terms accepted, timestamp |
-| `selfie` | Live photo upload, waiting-for-admin status |
-| `admin` | List, detail, selfie approve/reject, disbursement confirm |
-| `files` | Store and serve ID photo and selfie on the **local file system** |
-| `notify` | Twilio SMS OTP and SMTP email OTP |
+| `loan`        | EMI tenure, interest, fees, GST, net disbursement, IRR                               |
+| `bank`        | Disbursement account (holder, number, IFSC, bank name)                               |
+| `declaration` | Terms accepted, timestamp                                                            |
+| `selfie`      | Live photo upload, waiting-for-admin status                                          |
+| `admin`       | List, detail, selfie approve/reject, disbursement confirm                            |
+| `files`       | Store and serve ID photo and selfie on the **local file system**                     |
+| `notify`      | Twilio SMS OTP and SMTP email OTP                                                    |
+
 
 All modules share **one PostgreSQL database** and **one application status field**. That keeps the customer journey consistent.
 
 ---
 
+
+
 ## 5. Security and identity (locked)
 
-| Concern | Choice |
-| --- | --- |
-| Login page | One page for customers and admins |
+
+| Concern            | Choice                                                 |
+| ------------------ | ------------------------------------------------------ |
+| Login page         | One page for customers and admins                      |
 | Post-login routing | JWT claims / role → customer wizard or admin dashboard |
-| Roles | `CUSTOMER`, `ADMIN` |
-| Passwords | BCrypt (never store plain text) |
-| API auth | Bearer JWT |
-| Email verification | OTP sent over **SMTP** |
-| Phone verification | OTP sent over **Twilio SMS** |
-| OAuth | Google OAuth 2.0 — **future** (not in v1) |
+| Roles              | `CUSTOMER`, `ADMIN`                                    |
+| Passwords          | BCrypt (never store plain text)                        |
+| API auth           | Bearer JWT                                             |
+| Email verification | OTP sent over **SMTP**                                 |
+| Phone verification | OTP sent over **Twilio SMS**                           |
+| OAuth              | Google OAuth 2.0 — **future** (not in v1)              |
+
 
 Customers must verify **both email and phone** before KYC and later steps.
 
 ---
 
+
+
 ## 6. Data and files (locked)
 
-| Concern | Choice |
-| --- | --- |
-| Primary database | PostgreSQL |
-| Core records | Users, roles, applications, KYC, eligibility, loan terms, bank accounts, declarations, selfies, stage history |
-| File storage | **Local file system** only (configured upload directory on the server) |
-| Secrets | Environment variables / `.env` (Twilio, SMTP, JWT, DB). Never commit secrets |
+
+| Concern          | Choice                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| Primary database | PostgreSQL                                                                                                    |
+| Core records     | Users, roles, applications, KYC, eligibility, loan terms, bank accounts, declarations, selfies, stage history |
+| File storage     | **Local file system** only (configured upload directory on the server)                                        |
+| Secrets          | Environment variables / `.env` (Twilio, SMTP, JWT, DB). Never commit secrets                                  |
+
 
 ---
 
+
+
 ## 7. Simulations vs real integrations
 
-| Capability | Locked approach |
-| --- | --- |
-| Phone OTP | **Twilio** SMS (real) |
-| Email OTP | **SMTP** (real) |
-| Google login | **Future** — not built in v1 |
-| File storage | **Local file system** |
-| KYC / PAN / Aadhaar checks | **Simulated** |
-| CIBIL / credit score | Customer-entered or sample data; eligibility rules run in backend |
-| Bank account validation | **Simulated** (format checks only) |
+
+| Capability                 | Locked approach                                                   |
+| -------------------------- | ----------------------------------------------------------------- |
+| Phone OTP                  | **Twilio** SMS (real)                                             |
+| Email OTP                  | **SMTP** (real)                                                   |
+| Google login               | **Future** — not built in v1                                      |
+| File storage               | **Local file system**                                             |
+| KYC / PAN / Aadhaar checks | **Simulated**                                                     |
+| CIBIL / credit score       | Customer-entered or sample data; eligibility rules run in backend |
+| Bank account validation    | **Simulated** (format checks only)                                |
+
 
 The application must stay fully usable without external KYC or credit-bureau vendors. Login and verification in v1 depend on Twilio and SMTP being configured.
 
 ---
+
+
 
 ## 8. Loan calculation (backend)
 
@@ -188,6 +220,8 @@ Outputs: monthly EMI, total interest, total repayment, total charges, net disbur
 
 ---
 
+
+
 ## 9. Explicitly not locked (do not use for v1)
 
 Do **not** introduce these unless the product requirements change:
@@ -202,6 +236,8 @@ Do **not** introduce these unless the product requirements change:
 - A heavy frontend UI kit as the primary styling system
 
 ---
+
+
 
 ## 10. Suggested repo layout
 
